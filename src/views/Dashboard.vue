@@ -17,16 +17,5 @@
   </el-card>
 </template>
 
-<script setup>
-import { reactive, onBeforeMount, getCurrentInstance, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-
+<script setup name="dashboard">
 </script>
-
-<style scoped>
-.user-avator {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-}
-</style>

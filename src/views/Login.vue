@@ -25,7 +25,10 @@
           <el-checkbox v-model="param.force" />
         </el-form-item>
         <div class="login-btn">
-          <el-button type="primary" @click="submitForm()">登录</el-button>
+          <el-button type="primary" @click="submitForm">登录</el-button>
+        </div>
+        <div class="login-btn">
+          <el-button @click="logout">登出</el-button>
         </div>
       </el-form>
     </div>
@@ -39,10 +42,10 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
 export default {
-  setup(props, context) {
+  name: 'login',
+  setup() {
     const { proxy } = getCurrentInstance();
     const cloudICP = proxy.ICP;
-    console.log(cloudICP, 111111111);
     const router = useRouter();
     const param = reactive({
       user: "66647001",
@@ -61,24 +64,35 @@ export default {
       password: [{ required: true, message: "请输入密码", trigger: "blur" }],
     };
     const login = ref(null);
+    const logout = () => {
+      cloudICP.dispatch.auth.unifiedLogout({
+        callback: ({ rsp, desc }) => {
+          if (rsp == 0) {
+            ElMessage.success("登出成功");
+            localStorage.removeItem("ms_username");
+          }
+        },
+      });
+    };
+
     const submitForm = () => {
       login.value.validate((valid) => {
         if (valid) {
           let person = {
             ...param,
+            force: param.force.toString(),
             callback: function (data) {
-                console.log(data)
+              console.log(data);
               if (data.rsp == 0) {
                 ElMessage.success("登录成功");
                 router.push("/");
                 localStorage.setItem("ms_username", param.user);
-                
               } else {
                 ElMessage.error(data.desc);
               }
             },
           };
-                console.log(person,'person')
+          console.log(person, "person");
 
           cloudICP.dispatch.auth.unifiedLogin(person);
         } else {
@@ -95,6 +109,7 @@ export default {
       rules,
       login,
       submitForm,
+      logout
     };
   },
 };

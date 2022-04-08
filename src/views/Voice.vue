@@ -39,7 +39,7 @@
   </el-form>
 </template>
 
-<script setup>
+<script setup name="voice">
 import { reactive, ref, getCurrentInstance, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 const { proxy } = getCurrentInstance();

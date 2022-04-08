@@ -50,7 +50,7 @@ export default {
             },
             {
                 icon: "el-icon-lx-warn",
-                index: "1",
+                index: "2",
                 title: "群组业务",
                 subs: [
                     {
