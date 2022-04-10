@@ -7,6 +7,9 @@ export const useIndexStore = defineStore({
     collapse: false,
   }),
   actions:{
+    delTagsItem(data) {
+      this.tagsList.splice(data.index, 1);
+    },
     setTagsItem(data) {
       this.tagsList.push(data);
     },

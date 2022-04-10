@@ -27,9 +27,6 @@
         <div class="login-btn">
           <el-button type="primary" @click="submitForm">登录</el-button>
         </div>
-        <div class="login-btn">
-          <el-button @click="logout">登出</el-button>
-        </div>
       </el-form>
     </div>
   </div>
@@ -70,16 +67,6 @@ export default {
       password: [{ required: true, message: "请输入密码", trigger: "blur" }],
     };
     const login = ref(null);
-    const logout = () => {
-      cloudICP.value.dispatch.auth.unifiedLogout({
-        callback: ({ rsp, desc }) => {
-          if (rsp == 0) {
-            ElMessage.success("登出成功");
-            localStorage.removeItem("ms_username");
-          }
-        },
-      });
-    };
 
     const submitForm = () => {
       login.value.validate((valid) => {
@@ -112,7 +99,6 @@ export default {
       rules,
       login,
       submitForm,
-      logout,
       cloudICP,
     };
   },

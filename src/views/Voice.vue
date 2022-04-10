@@ -1,42 +1,54 @@
 <template>
-  <el-form
-    ref="formRef"
-    :model="numberValidateForm"
-    label-width="100px"
-    class="demo-ruleForm"
-    :inline="true"
-  >
-    <el-form-item
-      label="呼叫号码"
-      prop="to"
-      :rules="[{ required: true, message: '呼叫号码必填' }]"
-    >
-      <el-input v-model="numberValidateForm.to">
-        <template #append>
-          <el-select
-            v-model="callCurrentType"
-            placeholder="Select"
-            style="width: 110px"
+  <div>
+    <div class="crumbs">
+      <el-breadcrumb separator="/">
+        <el-breadcrumb-item>语音业务</el-breadcrumb-item>
+      </el-breadcrumb>
+    </div>
+    <div class="container">
+      <el-form
+        ref="formRef"
+        :model="numberValidateForm"
+        label-width="100px"
+        class="demo-ruleForm"
+        :inline="true"
+      >
+        <el-form-item
+          label="呼叫号码"
+          prop="to"
+          :rules="[{ required: true, message: '呼叫号码必填' }]"
+        >
+          <el-input v-model="numberValidateForm.to">
+            <template #append>
+              <el-select
+                v-model="callCurrentType"
+                placeholder="Select"
+                style="width: 110px"
+              >
+                <el-option label="语音" value="1" />
+                <el-option label="视频" value="2" />
+                <el-option label="视频监控" value="3" />
+              </el-select>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            type="primary"
+            @click="submitForm(formRef)"
+            :loading="callLoading"
+            >呼叫</el-button
           >
-            <el-option label="语音" value="1" />
-            <el-option label="视频" value="2" />
-            <el-option label="视频监控" value="3" />
-          </el-select>
-        </template>
-      </el-input>
-    </el-form-item>
-    <el-form-item>
-      <el-button
-        type="primary"
-        @click="submitForm(formRef)"
-        :loading="callLoading"
-        >呼叫</el-button
-      >
-      <el-button type="primary" @click="rejectForm()" :disabled="rejectLoading"
-        >挂断</el-button
-      >
-    </el-form-item>
-  </el-form>
+          <el-button
+            type="primary"
+            @click="rejectForm()"
+            :disabled="rejectLoading"
+            >挂断</el-button
+          >
+        </el-form-item>
+      </el-form>
+    </div>
+  </div>
 </template>
 
 <script setup name="voice">
@@ -57,7 +69,9 @@ const numberValidateForm = reactive({
 });
 
 const rejectForm = () => {
-  cloudICP.value.dispatch[callCurrentType.value == 1 ? "voice" : "video"].release({
+  cloudICP.value.dispatch[
+    callCurrentType.value == 1 ? "voice" : "video"
+  ].release({
     cid: callCurrentValue.value.cid,
     callback: ({ rsp, desc }) => {
       if (rsp == 0) {
