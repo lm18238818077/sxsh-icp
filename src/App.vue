@@ -3,20 +3,44 @@
 </template>
 
 <script setup>
-import {  getCurrentInstance } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-
+import { useIcpStore } from "./store/icp";
 import eventToDesc from "./config/OnDialInRinging";
+import { ElNotification } from "element-plus";
+import { sdkStatusNotify } from "./config/status";
 
-const { proxy } = getCurrentInstance();
-const cloudICP = proxy.ICP;
+const icpStore = useIcpStore();
+
+let cloudICP = new ICPSDK({
+  serverWSPort: "8002",
+  serverAddress: "sdkserver.cloudicp.huawei.com",
+  serverHttpPort: "8002",
+  debugMode: "true",
+  ringFlag: "0",
+  mode: "window",
+  ssl_enable: true,
+  sdkStatusNotify: (data) => {
+    ElNotification({
+      title: sdkStatusNotify[data.status],
+      message: data.desc,
+    });
+    // 强制初始化
+    cloudICP.dispatch.device.forceInitMSP({
+      callback: ({ rsp, desc }) => {
+        localStorage.removeItem("ms_username");
+      },
+    });
+  },
+});
+
+icpStore.init(cloudICP);
 
 cloudICP.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnDialInRinging",
   callback: ({ eventName, rsp, value }) => {
     console.log(eventName, rsp, value, "VideoNotify  OnDialInRinging");
-    let curCallType = (rsp == 2002 ? 'voice' : 'video')
+    let curCallType = rsp == 2002 ? "voice" : "video";
     ElMessageBox.confirm(
       `主叫号码: ${value.caller}  被叫号码:${value.callee}`,
       eventToDesc[eventName]["value"]["calltype"][value.calltype],
@@ -57,7 +81,6 @@ cloudICP.dispatch.event.register({
       });
   },
 });
-
 </script>
 
 <style>

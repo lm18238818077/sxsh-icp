@@ -36,17 +36,23 @@
 </template>
 
 <script>
-import { ref, reactive, getCurrentInstance } from "vue";
-import { useStore } from "vuex";
+import { ref, reactive, computed } from "vue";
+import { useIndexStore } from "../store/index";
+import { useIcpStore } from "../store/icp";
+import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 
 export default {
-  name: 'login',
+  name: "login",
   setup() {
-    const { proxy } = getCurrentInstance();
-    const cloudICP = proxy.ICP;
     const router = useRouter();
+    const indexStore = useIndexStore();
+    const icpStore = useIcpStore();
+    const { cloudICP } = storeToRefs(icpStore);
+
+    indexStore.clearTags();
+
     const param = reactive({
       user: "66647001",
       password: "66647001",
@@ -65,7 +71,7 @@ export default {
     };
     const login = ref(null);
     const logout = () => {
-      cloudICP.dispatch.auth.unifiedLogout({
+      cloudICP.value.dispatch.auth.unifiedLogout({
         callback: ({ rsp, desc }) => {
           if (rsp == 0) {
             ElMessage.success("登出成功");
@@ -94,22 +100,20 @@ export default {
           };
           console.log(person, "person");
 
-          cloudICP.dispatch.auth.unifiedLogin(person);
+          cloudICP.value.dispatch.auth.unifiedLogin(person);
         } else {
           return false;
         }
       });
     };
 
-    const store = useStore();
-    store.commit("clearTags");
-
     return {
       param,
       rules,
       login,
       submitForm,
-      logout
+      logout,
+      cloudICP,
     };
   },
 };

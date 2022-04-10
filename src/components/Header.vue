@@ -32,21 +32,24 @@
   </div>
 </template>
 <script setup>
-import { computed, onMounted, getCurrentInstance } from "vue";
-import { useStore } from "vuex";
+import { computed, onMounted } from "vue";
+import { useIcpStore } from "../store/icp";
+import { useIndexStore } from "../store/index";
+import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 
-const { proxy } = getCurrentInstance();
-const cloudICP = proxy.ICP;
-
 const username = localStorage.getItem("ms_username");
 
-const store = useStore();
-const collapse = computed(() => store.state.collapse);
+const icpStore = useIcpStore();
+const indexStore = useIndexStore();
+
+const { cloudICP } = storeToRefs(icpStore);
+const { collapse } = storeToRefs(indexStore);
+
 // 侧边栏折叠
 const collapseChage = () => {
-  store.commit("handleCollapse", !collapse.value);
+  indexStore.handleCollapse(!collapse.value);
 };
 
 onMounted(() => {
@@ -60,7 +63,7 @@ const router = useRouter();
 
 const handleCommand = (command) => {
   if (command == "loginout") {
-    cloudICP.dispatch.auth.unifiedLogout({
+    cloudICP.value.dispatch.auth.unifiedLogout({
       callback: ({ rsp, desc }) => {
         if (rsp == 0) {
           localStorage.removeItem("ms_username");

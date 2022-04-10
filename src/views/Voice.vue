@@ -42,9 +42,11 @@
 <script setup name="voice">
 import { reactive, ref, getCurrentInstance, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-const { proxy } = getCurrentInstance();
-const cloudICP = proxy.ICP;
+import { useIcpStore } from "../store/icp";
+import { storeToRefs } from "pinia";
 
+const icpStore = useIcpStore();
+const { cloudICP } = storeToRefs(icpStore);
 const formRef = ref(null);
 const callLoading = ref(false);
 const rejectLoading = ref(true);
@@ -55,7 +57,7 @@ const numberValidateForm = reactive({
 });
 
 const rejectForm = () => {
-  cloudICP.dispatch[callCurrentType.value == 1 ? "voice" : "video"].release({
+  cloudICP.value.dispatch[callCurrentType.value == 1 ? "voice" : "video"].release({
     cid: callCurrentValue.value.cid,
     callback: ({ rsp, desc }) => {
       if (rsp == 0) {
@@ -71,7 +73,7 @@ const submitForm = (formEl) => {
     if (valid) {
       console.log(callCurrentType.value == 2);
       if (callCurrentType.value == 1) {
-        cloudICP.dispatch.voice.dial({
+        cloudICP.value.dispatch.voice.dial({
           to: numberValidateForm.to,
           "Answer-Mode": "1",
           callback: ({ rsp, desc }) => {
@@ -83,12 +85,12 @@ const submitForm = (formEl) => {
           },
         });
       } else if (callCurrentType.value == 2) {
-        cloudICP.dispatch.video.dialVideo({
+        cloudICP.value.dispatch.video.dialVideo({
           to: numberValidateForm.to,
           dialVideoParam: {
             fmt: "720P",
             buttonIDs: 1,
-            showToolbar: 1
+            showToolbar: 1,
           },
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
@@ -98,25 +100,25 @@ const submitForm = (formEl) => {
             }
           },
         });
-      }else if (callCurrentType.value == 3) {
-        cloudICP.dispatch.video.monitorVideo({
+      } else if (callCurrentType.value == 3) {
+        cloudICP.value.dispatch.video.monitorVideo({
           to: numberValidateForm.to,
           monitorParam: {
             fmt: "720P",
             buttonIDs: 1,
             showToolbar: 1,
-            mute: '0',
-            confirm: '0',
-            camera: '0',
-            videooffer: '0',
+            mute: "0",
+            confirm: "0",
+            camera: "0",
+            videooffer: "0",
           },
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
               callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
-            }else{
-                ElMessage.error(desc)
+            } else {
+              ElMessage.error(desc);
             }
           },
         });
@@ -128,7 +130,7 @@ const submitForm = (formEl) => {
   });
 };
 
-cloudICP.dispatch.event.register({
+cloudICP.value.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnDialOutProceeding",
   callback: ({ eventName, rsp, value }) => {
@@ -136,7 +138,7 @@ cloudICP.dispatch.event.register({
   },
 });
 
-cloudICP.dispatch.event.register({
+cloudICP.value.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnCallRelease",
   callback: ({ eventName, rsp, value }) => {
@@ -145,7 +147,7 @@ cloudICP.dispatch.event.register({
     callCurrentValue.value = "";
   },
 });
-cloudICP.dispatch.event.register({
+cloudICP.value.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnDialOutFailure",
   callback: ({ eventName, rsp, value }) => {
