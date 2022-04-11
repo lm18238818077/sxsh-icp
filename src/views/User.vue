@@ -26,6 +26,7 @@
                 :visible="dialogVisible"
                 @change="handleCropImage"
                 :imgsrc="avatarImg"
+                @closed="dialogVisible = false"
               />
             </div>
           </el-card>

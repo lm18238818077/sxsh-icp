@@ -1,6 +1,6 @@
 <template>
   <div>
-    <el-dialog title="裁剪图片" v-model="visible" width="600px">
+    <el-dialog title="裁剪图片" :model-value="props.visible" width="600px" @closed="emit('closed')">
       <vue-cropper
         ref="cropper"
         :src="props.imgsrc"
@@ -30,7 +30,7 @@
 </template>
 
 <script setup name="CropImage">
-import { defineProps, defineEmits, ref, computed } from "vue";
+import { ref, computed } from "vue";
 import VueCropper from "vue-cropperjs";
 import "cropperjs/dist/cropper.css";
 const props = defineProps({
@@ -38,11 +38,10 @@ const props = defineProps({
   imgsrc: String,
 });
 
-const emit = defineEmits(["change"]);
+const emit = defineEmits(["change", "closed"]);
 
 const cropImg = ref("");
 const cropper = ref(null);
-const visible = computed(() => props.visible)
 
 const setImage = (e) => {
   const file = e.target.files[0];
