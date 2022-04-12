@@ -6,25 +6,11 @@
       </el-breadcrumb>
     </div>
     <div class="container">
-      <el-form
-        ref="formRef"
-        :model="numberValidateForm"
-        label-width="100px"
-        class="demo-ruleForm"
-        :inline="true"
-      >
-        <el-form-item
-          label="呼叫号码"
-          prop="to"
-          :rules="[{ required: true, message: '呼叫号码必填' }]"
-        >
+      <el-form ref="formRef" :model="numberValidateForm" label-width="100px" class="demo-ruleForm" :inline="true">
+        <el-form-item label="呼叫号码" prop="to" :rules="[{ required: true, message: '呼叫号码必填' }]">
           <el-input v-model="numberValidateForm.to">
             <template #append>
-              <el-select
-                v-model="callCurrentType"
-                placeholder="Select"
-                style="width: 110px"
-              >
+              <el-select v-model="callCurrentType" placeholder="Select" style="width: 110px">
                 <el-option label="语音" value="1" />
                 <el-option label="视频" value="2" />
                 <el-option label="视频监控" value="3" />
@@ -33,18 +19,8 @@
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button
-            type="primary"
-            @click="submitForm(formRef)"
-            :loading="callLoading"
-            >呼叫</el-button
-          >
-          <el-button
-            type="primary"
-            @click="rejectForm()"
-            :disabled="rejectLoading"
-            >挂断</el-button
-          >
+          <el-button type="primary" @click="submitForm(formRef)" :loading="callLoading">呼叫</el-button>
+          <el-button type="primary" @click="rejectForm()" :disabled="rejectLoading">挂断</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -52,10 +28,12 @@
 </template>
 
 <script setup name="voice">
-import { reactive, ref, getCurrentInstance, onMounted } from "vue";
+import { reactive, ref, watch, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useIcpStore } from "../store/icp";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
+import { voiceDial, videoDial, videoMonitor, voiceRelease, videoRelease } from "../config/status";
 
 const icpStore = useIcpStore();
 const { cloudICP } = storeToRefs(icpStore);
@@ -64,11 +42,26 @@ const callLoading = ref(false);
 const rejectLoading = ref(true);
 const callCurrentValue = reactive({ value: "" });
 const callCurrentType = ref("1");
+const rspRef = ref(0);
 const numberValidateForm = reactive({
   to: "77747011",
 });
 
+const router = useRouter()
+
+watch(rspRef, (newVal) => {
+  if (newVal == -3) {
+    router.push('/login')
+    cloudICP.value.dispatch.device.forceInitMSP({
+      callback: ({ rsp, desc }) => {
+        localStorage.removeItem("ms_username");
+      },
+    });
+  }
+})
+
 const rejectForm = () => {
+  let statusType = callCurrentType.value == 1 ? voiceRelease : videoRelease
   cloudICP.value.dispatch[
     callCurrentType.value == 1 ? "voice" : "video"
   ].release({
@@ -76,7 +69,10 @@ const rejectForm = () => {
     callback: ({ rsp, desc }) => {
       if (rsp == 0) {
         ElMessage.success("挂断成功");
+      } else {
+        ElMessage.error(`错误码:${rsp},${statusType[rsp] || desc}`);
       }
+      rspRef.value = rsp
     },
   });
 };
@@ -85,17 +81,19 @@ const submitForm = (formEl) => {
   if (!formEl) return;
   formEl.validate((valid) => {
     if (valid) {
-      console.log(callCurrentType.value == 2);
       if (callCurrentType.value == 1) {
         cloudICP.value.dispatch.voice.dial({
           to: numberValidateForm.to,
           "Answer-Mode": "1",
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              callLoading.value = true;
+              //callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
+            } else {
+              ElMessage.error(`错误码:${rsp},${voiceDial[rsp] || desc}`);
             }
+            rspRef.value = rsp
           },
         });
       } else if (callCurrentType.value == 2) {
@@ -108,10 +106,13 @@ const submitForm = (formEl) => {
           },
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              callLoading.value = true;
+              //callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
+            } else {
+              ElMessage.error(`错误码:${rsp},${videoDial[rsp] || desc}`);
             }
+            rspRef.value = rsp
           },
         });
       } else if (callCurrentType.value == 3) {
@@ -128,12 +129,13 @@ const submitForm = (formEl) => {
           },
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              callLoading.value = true;
+              //callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
             } else {
-              ElMessage.error(desc);
+              ElMessage.error(`错误码:${rsp},${videoMonitor[rsp] || desc}`);
             }
+            rspRef.value = rsp
           },
         });
       }

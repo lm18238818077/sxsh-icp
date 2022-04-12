@@ -7,7 +7,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { useIcpStore } from "./store/icp";
 import eventToDesc from "./config/OnDialInRinging";
 import { ElNotification } from "element-plus";
-import { sdkStatusNotify } from "./config/status";
+import { sdkStatusNotify, voiceAnswer, videoAnswer, voiceReject, videoReject } from "./config/status";
 
 const icpStore = useIcpStore();
 
@@ -55,8 +55,8 @@ cloudICP.dispatch.event.register({
           cid: value.cid,
           ...(curCallType === "video" && {
             windowInfo: {
-              width: "500",
-              height: "500",
+              width: "1000",
+              height: "1000",
               posX: "0",
               posY: "0",
               buttonIDs: 1,
@@ -65,6 +65,8 @@ cloudICP.dispatch.event.register({
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
               ElMessage.success("接听成功");
+            } else {
+              ElMessage.error(`错误码:${rsp},${(curCallType == 'voice' ? voiceAnswer[rsp] : videoAnswer[rsp]) || desc}`);
             }
           },
         });
@@ -74,7 +76,9 @@ cloudICP.dispatch.event.register({
           cid: value.cid,
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              ElMessage.success("挂断成功");
+              ElMessage.success("拒接成功");
+            } else {
+              ElMessage.error(`错误码:${rsp},${(curCallType == 'voice' ? voiceReject[rsp] : videoReject[rsp]) || desc}`);
             }
           },
         });
