@@ -2,23 +2,12 @@
   <div class="login-wrap">
     <div class="ms-login">
       <div class="ms-title">后台管理系统</div>
-      <el-form
-        :model="param"
-        :rules="rules"
-        ref="login"
-        label-width="70px"
-        class="ms-content"
-      >
+      <el-form :model="param" :rules="rules" ref="login" label-width="70px" class="ms-content">
         <el-form-item prop="user" label="用户名">
           <el-input v-model="param.user" placeholder="user"> </el-input>
         </el-form-item>
         <el-form-item prop="password" label="密码">
-          <el-input
-            type="password"
-            placeholder="password"
-            v-model="param.password"
-            @keyup.enter="submitForm()"
-          >
+          <el-input type="password" placeholder="password" v-model="param.password" @keyup.enter="submitForm()">
           </el-input>
         </el-form-item>
         <el-form-item label="force">
@@ -33,20 +22,20 @@
 </template>
 
 <script>
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, watch, onUnmounted } from "vue";
 import { useIndexStore } from "../store/index";
 import { useIcpStore } from "../store/icp";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import { sameStatus, loginStatus } from "../config/status";
 
 export default {
-  name: "login",
   setup() {
     const router = useRouter();
     const indexStore = useIndexStore();
     const icpStore = useIcpStore();
-    const { cloudICP } = storeToRefs(icpStore);
+    const { cloudICP, success } = storeToRefs(icpStore);
 
     indexStore.clearTags();
 
@@ -74,25 +63,47 @@ export default {
           let person = {
             ...param,
             force: param.force.toString(),
-            callback: function (data) {
-              console.log(data);
-              if (data.rsp == 0) {
+            callback: function ({ rsp, desc }) {
+              if (rsp == 0) {
                 ElMessage.success("登录成功");
                 router.push("/");
                 localStorage.setItem("ms_username", param.user);
               } else {
-                ElMessage.error(data.desc);
+                ElMessage.error(`错误码:${rsp},${loginStatus[rsp] || desc}`);
               }
             },
           };
           console.log(person, "person");
-
           cloudICP.value.dispatch.auth.unifiedLogin(person);
         } else {
           return false;
         }
       });
     };
+
+    watch(success, (newVal) => {
+      console.log(newVal, 'watch')
+      if (newVal) {
+        initICP()
+      }
+    })
+
+    onUnmounted(() => {
+      success.value = false
+    })
+
+    const initICP = () => {
+      cloudICP.value.dispatch.device.forceInitMSP({
+        callback: ({ rsp, desc }) => {
+          if (rsp == 0) {
+            ElMessage.success("初始化成功");
+            localStorage.removeItem("ms_username");
+          } else {
+            ElMessage.error(`错误码:${rsp},${sameStatus[rsp] || desc}`);
+          }
+        },
+      });
+    }
 
     return {
       param,
@@ -113,6 +124,7 @@ export default {
   background-image: url(../assets/img/login-bg.jpg);
   background-size: 100%;
 }
+
 .ms-title {
   width: 100%;
   line-height: 50px;
@@ -121,6 +133,7 @@ export default {
   color: #fff;
   border-bottom: 1px solid #ddd;
 }
+
 .ms-login {
   position: absolute;
   left: 50%;
@@ -131,17 +144,21 @@ export default {
   background: rgba(255, 255, 255, 0.6);
   overflow: hidden;
 }
+
 .ms-content {
   padding: 30px 30px;
 }
+
 .login-btn {
   text-align: center;
 }
+
 .login-btn button {
   width: 100%;
   height: 36px;
   margin-bottom: 10px;
 }
+
 .login-tips {
   font-size: 12px;
   line-height: 30px;

@@ -18,5 +18,16 @@ export default{
         dispatch: '分发',
       }
     }
+  },
+  OnGroupCallStatusNotify: {
+    rsp: {
+      4027: '组呼激活',
+      4028: '组呼未激活',
+    },
+    value: {
+      grpid: '组呼群组号',
+      name: '主讲方名字',
+      speaker: '主讲方id',
+    }
   }
 }

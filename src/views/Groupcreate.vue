@@ -79,16 +79,16 @@
 
         <el-table-column label="Operations" width="400px">
           <template #default="scope">
-            <el-button size="small" @click="handleEdit(scope.row.group, true)">Edit</el-button>
+            <el-button size="small" @click="handleEdit(scope.row.group, true)">编辑</el-button>
             <el-popconfirm title="确定删除?" @confirm="handleDelete(scope.$index, scope.row)">
               <template #reference>
-                <el-button size="small" type="danger">Delete</el-button>
+                <el-button size="small" type="danger">删除</el-button>
               </template>
             </el-popconfirm>
 
             <el-button size="small" @click="handleSubscribe(scope.row)">订阅和加入组呼</el-button>
             <el-button size="small" @click="handleCall(scope.row)">{{
-              isTalking ? "组呼放权" : "组呼发起/抢权"
+              currentEditRow == scope.row.group && isTalking ? "组呼放权" : "组呼发起/抢权"
             }}</el-button>
           </template>
         </el-table-column>
@@ -108,7 +108,7 @@ const router = useRouter()
 const icpStore = useIcpStore();
 const rspRef = ref(0);
 
-const { cloudICP } = storeToRefs(icpStore);
+const { cloudICP, success } = storeToRefs(icpStore);
 const isTalking = ref(false);
 const tableData = reactive({ list: [] });
 
@@ -131,11 +131,7 @@ const param = reactive({
 watch(rspRef, (newVal) => {
   if (newVal == -3) {
     router.push('/login')
-    cloudICP.value.dispatch.device.forceInitMSP({
-      callback: ({ rsp, desc }) => {
-        localStorage.removeItem("ms_username");
-      },
-    });
+    success.value = true
   }
 })
 
@@ -243,14 +239,15 @@ const handleSubscribe = (value) => {
 };
 
 const handleCall = (value) => {
+  currentEditRow.value = value.group;
   cloudICP.value.dispatch.group[
     isTalking.value ? "pttreleaseTalkingGroup" : "pttTalkingGroup"
   ]({
     grpid: value.group,
     callback: ({ rsp, desc }) => {
       if (rsp == 0) {
-        isTalking.value = !isTalking.value;
         ElMessage.success(isTalking.value ? "放权成功" : "组呼或者抢权成功");
+        isTalking.value = !isTalking.value;
       } else {
         ElMessage.error(desc);
       }

@@ -3,7 +3,8 @@ import { defineStore } from 'pinia'
 export const useIcpStore = defineStore({
   id: 'icp',
   state: ()=>({
-    cloudICP: null
+    cloudICP: null,
+    success: false
   }),
   actions:{
     init(data) {

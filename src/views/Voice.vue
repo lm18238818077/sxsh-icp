@@ -19,7 +19,7 @@
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="submitForm(formRef)" :loading="callLoading">呼叫</el-button>
+          <el-button type="primary" @click="submitForm(formRef)">呼叫</el-button>
           <el-button type="primary" @click="rejectForm()" :disabled="rejectLoading">挂断</el-button>
         </el-form-item>
       </el-form>
@@ -36,13 +36,13 @@ import { useRouter } from "vue-router";
 import { voiceDial, videoDial, videoMonitor, voiceRelease, videoRelease } from "../config/status";
 
 const icpStore = useIcpStore();
-const { cloudICP } = storeToRefs(icpStore);
+const { cloudICP, success } = storeToRefs(icpStore);
 const formRef = ref(null);
-const callLoading = ref(false);
 const rejectLoading = ref(true);
 const callCurrentValue = reactive({ value: "" });
 const callCurrentType = ref("1");
 const rspRef = ref(0);
+const cids = reactive([])
 const numberValidateForm = reactive({
   to: "77747011",
 });
@@ -52,11 +52,7 @@ const router = useRouter()
 watch(rspRef, (newVal) => {
   if (newVal == -3) {
     router.push('/login')
-    cloudICP.value.dispatch.device.forceInitMSP({
-      callback: ({ rsp, desc }) => {
-        localStorage.removeItem("ms_username");
-      },
-    });
+    success.value = true
   }
 })
 
@@ -87,7 +83,6 @@ const submitForm = (formEl) => {
           "Answer-Mode": "1",
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              //callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
             } else {
@@ -106,7 +101,6 @@ const submitForm = (formEl) => {
           },
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              //callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
             } else {
@@ -129,7 +123,6 @@ const submitForm = (formEl) => {
           },
           callback: ({ rsp, desc }) => {
             if (rsp == 0) {
-              //callLoading.value = true;
               rejectLoading.value = false;
               ElMessage.success("呼叫成功");
             } else {
@@ -158,7 +151,6 @@ cloudICP.value.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnCallRelease",
   callback: ({ eventName, rsp, value }) => {
-    callLoading.value = false;
     rejectLoading.value = true;
     callCurrentValue.value = "";
   },
@@ -167,9 +159,113 @@ cloudICP.value.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnDialOutFailure",
   callback: ({ eventName, rsp, value }) => {
-    callLoading.value = false;
     rejectLoading.value = true;
     callCurrentValue.value = "";
   },
 });
+
+cloudICP.value.dispatch.event.register({
+  eventType: "VoiceNotify",
+  eventName: "OnCallConnect",
+  callback: ({ eventName, rsp, value }) => {
+    let { cid, calltype } = value
+    console.log(cid, 'OnCallConnect')
+    if (calltype === 'monitor') {
+      cids.push(cid)
+      initMonitor(cid, 'add')
+    }
+  },
+});
+
+cloudICP.value.dispatch.event.register({
+  eventType: "VoiceNotify",
+  eventName: "OnCallRelease",
+  callback: ({ eventName, rsp, value }) => {
+    let { cid, calltype } = value
+    console.log(cid, 'OnCallRelease')
+    if (calltype === 'monitor') {
+      let index = cids.findIndex(v => v == cid)
+      if (index < 0) return
+      cids.splice(index, 1)
+      initMonitor(index)
+    }
+  },
+});
+
+
+const initMonitor = (id, type) => {
+
+  if (type == 'add') {
+    let lineth = 0
+    lineth = Math.ceil(cids.length / 3)
+    console.log({
+      cid: id,
+      windowInfo: {
+        "width": "300",
+        "height": "300",
+        "posX": ((cids.length - 1) % 3 * 300) + '',
+        "posY": ((lineth - 1) * 300) + ''
+
+      },
+      callback: ({ rsp, desc }) => {
+        if (rsp != 0) {
+          ElMessage.error(`错误码:${rsp}， ${desc}`);
+        }
+      }
+    }, 'add')
+    cloudICP.value.dispatch.device.setWindowInfo({
+      cid: id,
+      windowInfo: {
+        "width": "300",
+        "height": "300",
+        "posX": ((cids.length - 1) % 3 * 300) + '',
+        "posY": ((lineth - 1) * 300) + ''
+      },
+      callback: ({ rsp, desc }) => {
+        if (rsp != 0) {
+          ElMessage.error(`错误码:${rsp}， ${desc}`);
+        }
+      }
+    })
+  } else {
+    let lineth = 0
+    for (let i = id; i < cids.length; i++) {
+      console.log({
+        cid: cids[i],
+        windowInfo: {
+          "width": "300",
+          "height": "300",
+          "posX": (i % 3 * 300) + '',
+          "posY": (lineth * 300) + ''
+
+        }
+      }, id, 'jianshao')
+
+      cloudICP.value.dispatch.device.setWindowInfo({
+        cid: cids[i],
+        windowInfo: {
+          "width": "300",
+          "height": "300",
+          "posX": (i % 3 * 300) + '',
+          "posY": (lineth * 300) + ''
+
+        },
+        callback: ({ rsp, desc }) => {
+          if (rsp != 0) {
+            ElMessage.error(`错误码:${rsp}， ${desc}`);
+          }
+        }
+      })
+
+      if ((i + 1) % 3 === 0) {
+        lineth++
+      }
+
+    }
+  }
+
+
+}
+
 </script>
+

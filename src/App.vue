@@ -3,13 +3,18 @@
 </template>
 
 <script setup>
-import { ElMessage, ElMessageBox } from "element-plus";
+import { h } from "vue";
+import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { useIcpStore } from "./store/icp";
 import eventToDesc from "./config/OnDialInRinging";
-import { ElNotification } from "element-plus";
+import { debounce } from "lodash";
+import { useRouter } from "vue-router";
+
+
 import { sdkStatusNotify, voiceAnswer, videoAnswer, voiceReject, videoReject } from "./config/status";
 
 const icpStore = useIcpStore();
+const router = useRouter();
 
 let cloudICP = new ICPSDK({
   serverWSPort: "8002",
@@ -24,17 +29,15 @@ let cloudICP = new ICPSDK({
       title: sdkStatusNotify[data.status],
       message: data.desc,
     });
-    // 强制初始化
-    cloudICP.dispatch.device.forceInitMSP({
-      callback: ({ rsp, desc }) => {
-        localStorage.removeItem("ms_username");
-      },
-    });
+    router.push('/login').then(() => {
+      icpStore.success = true
+    })
   },
 });
 
 icpStore.init(cloudICP);
 
+// 注册语音和视频事件
 cloudICP.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnDialInRinging",
@@ -85,6 +88,45 @@ cloudICP.dispatch.event.register({
       });
   },
 });
+
+
+//注册组呼状态事件
+cloudICP.dispatch.event.register({
+  eventType: "GroupCallNotify",
+  eventName: "OnGroupCallStatusNotify",
+  callback: debounce(function ({ eventName, rsp, value }) {
+    console.log(eventName, rsp, value, 1111111)
+    let current = eventToDesc[eventName]
+    ElNotification({
+      title: `组呼资源通知（${current.rsp[rsp]}）`,
+      message: h('p', null, [
+        h('span', null, `${current.value.grpid}：${value.grpid}`),
+        h('br'),
+        h('span', null, `${current.value.name}：${value.name}`),
+        h('br'),
+        h('span', null, `${current.value.speaker}：${value.speaker}`),
+      ]),
+      type: 'info',
+    })
+
+  }, 500),
+});
+
+//注册登录状态事件
+cloudICP.dispatch.event.register({
+  eventType: "ModuleNotify",
+  eventName: "OnDispatchKickOutNotifyEvent",
+  callback: function ({ eventName, localip, param }) {
+    ElMessageBox.alert(`您已经在其他地方进行登录,当前登录的IP${localip},新登录地址的IP${param.newip}`, '用户被踢出', {
+      confirmButtonText: '好的',
+      callback: () => {
+        router.push('/login')
+        icpStore.success = true
+      },
+    })
+  }
+});
+
 </script>
 
 <style>

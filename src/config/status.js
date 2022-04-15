@@ -68,6 +68,21 @@ let videoMonitor = {
     ...sameStatus
 }
 
+let loginStatus = {
+    '-1': '请求发送到服务器的失败的异常。',
+    '-2': '请求参数校验不合法。',
+    '-3': 'SDK还在初始化中，请稍后再试。',
+    '-4': 'SDK初始化异常，无法获取本地IP。',
+    '-5': 'SDK初始化异常，无法获取摄像头信息。',
+    '-6': '缺少eUDC ip与port信息，请查看SDK初始化',
+    '101': '统一账号或密码错误',
+    '103': '用户被锁定',
+    '104': '首次登录需要修改密码',
+    '4016': '同一个用户号，并发同时登录，会引起资源冲突，请稍后再试。',
+    '4018': 'License受限。',
+    '4100': '用户已登录。可以设置force为true进行强制登录。',
+}
+
 
 
 export {
@@ -80,5 +95,7 @@ export {
     videoAnswer,
     videoReject,
     videoRelease,
-    videoMonitor
+    videoMonitor,
+    sameStatus,
+    loginStatus
 }
