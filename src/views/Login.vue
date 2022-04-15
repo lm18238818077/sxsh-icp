@@ -40,8 +40,8 @@ export default {
     indexStore.clearTags();
 
     const param = reactive({
-      user: "66647001",
-      password: "66647001",
+      user: "66647000",
+      password: "66647000",
       force: false,
     });
 

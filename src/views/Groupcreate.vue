@@ -131,7 +131,6 @@ const param = reactive({
 watch(rspRef, (newVal) => {
   if (newVal == -3) {
     router.push('/login')
-    success.value = true
   }
 })
 
@@ -181,6 +180,7 @@ const submitForm = (formEl) => {
           } else {
             ElMessage.error(desc);
           }
+          dialogFormVisible.value = false
           rspRef.value = rsp
 
         },

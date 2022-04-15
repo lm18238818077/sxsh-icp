@@ -4,7 +4,8 @@ export const useIcpStore = defineStore({
   id: 'icp',
   state: ()=>({
     cloudICP: null,
-    success: false
+    success: false,
+    callCurrent: ''
   }),
   actions:{
     init(data) {
