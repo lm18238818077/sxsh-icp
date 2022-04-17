@@ -6,17 +6,20 @@
       </el-breadcrumb>
     </div>
     <div class="container">
-      <el-form ref="formRef" :model="numberValidateForm" label-width="100px" class="demo-ruleForm" :inline="true">
-        <el-form-item label="呼叫号码" prop="to" :rules="[{ required: true, message: '呼叫号码必填' }]">
-          <el-input v-model="numberValidateForm.to">
-            <template #append>
-              <el-select v-model="callCurrentType" placeholder="Select" style="width: 110px">
-                <el-option label="语音" value="1" />
-                <el-option label="视频" value="2" />
-                <el-option label="视频监控" value="3" />
-              </el-select>
-            </template>
-          </el-input>
+      <el-form ref="formRef" :model="numberValidateForm" label-width="100px" class="demo-ruleForm" :inline="true"
+        :rules="rules">
+        <el-form-item label="呼叫号码" prop="to">
+          <el-select v-model="numberValidateForm.to" filterable placeholder="Select"
+            :filter-method="(value) => numberValidateForm.to = value + ''">
+            <el-option v-for="v in 23" :key="77746999 + v + ''" :label="77746999 + v + ''" :value="77746999 + v + ''" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="" prop="callType">
+          <el-select v-model="numberValidateForm.callType" placeholder="Select" style="width: 110px">
+            <el-option label="语音" value="1" />
+            <el-option label="视频" value="2" />
+            <el-option label="视频监控" value="3" />
+          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitForm(formRef)">呼叫</el-button>
@@ -29,7 +32,7 @@
 
 <script setup name="voice">
 import { reactive, ref, watch, computed } from "vue";
-import { ElMessage, ElNotification } from "element-plus";
+import { ElMessage } from "element-plus";
 import { useIcpStore } from "../store/icp";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
@@ -38,14 +41,14 @@ import { voiceDial, videoDial, videoMonitor, voiceRelease, videoRelease } from "
 const icpStore = useIcpStore();
 const { cloudICP, success, callCurrent } = storeToRefs(icpStore);
 const formRef = ref(null);
-const callCurrentType = ref("1");
+
 const rspRef = ref(0);
 const numberValidateForm = reactive({
   to: "77747011",
+  callType: "1"
 });
 
-const callCurrentValue = computed(()=> callCurrent.value)
-
+const callCurrentValue = computed(() => callCurrent.value)
 
 const router = useRouter()
 
@@ -55,11 +58,26 @@ watch(rspRef, (newVal) => {
   }
 })
 
+const rules = reactive({
+  to: [{
+    validator: (rule, value, callback) => {
+      if (value === '') {
+        callback(new Error('请输入号码'))
+      } else {
+        if (!/^\d+$/.test(value)) {
+          callback(new Error('请输入数字'))
+        }
+        callback()
+      }
+    }, trigger: 'change'
+  }]
+})
+
 const rejectForm = () => {
-  console.log(callCurrentValue,'callCurrentValue')
-  let statusType = callCurrentType.value == 1 ? voiceRelease : videoRelease
+  console.log(callCurrentValue.value, 'callCurrentValue')
+  let statusType = numberValidateForm.callType == 1 ? voiceRelease : videoRelease
   cloudICP.value.dispatch[
-    callCurrentType.value == 1 ? "voice" : "video"
+    numberValidateForm.callType == 1 ? "voice" : "video"
   ].release({
     cid: callCurrentValue.value,
     callback: ({ rsp, desc }) => {
@@ -75,9 +93,11 @@ const rejectForm = () => {
 
 const submitForm = (formEl) => {
   if (!formEl) return;
+  console.log(numberValidateForm.callType, '呼叫类型')
   formEl.validate((valid) => {
     if (valid) {
-      if (callCurrentType.value == 1) {
+      console.log(numberValidateForm)
+      if (numberValidateForm.callType == 1) {
         cloudICP.value.dispatch.voice.dial({
           to: numberValidateForm.to,
           "Answer-Mode": "1",
@@ -90,7 +110,7 @@ const submitForm = (formEl) => {
             rspRef.value = rsp
           },
         });
-      } else if (callCurrentType.value == 2) {
+      } else if (numberValidateForm.callType == 2) {
         cloudICP.value.dispatch.video.dialVideo({
           to: numberValidateForm.to,
           dialVideoParam: {
@@ -107,11 +127,10 @@ const submitForm = (formEl) => {
             rspRef.value = rsp
           },
         });
-      } else if (callCurrentType.value == 3) {
+      } else if (numberValidateForm.callType == 3) {
         cloudICP.value.dispatch.video.monitorVideo({
           to: numberValidateForm.to,
           monitorParam: {
-            fmt: "720P",
             buttonIDs: 1,
             showToolbar: 1,
             mute: "0",

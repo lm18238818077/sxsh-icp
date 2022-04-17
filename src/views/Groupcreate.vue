@@ -2,9 +2,6 @@
   <div>
     <div class="crumbs">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item>
-          <i class="el-icon-lx-calendar"></i> 群组业务
-        </el-breadcrumb-item>
         <el-breadcrumb-item>动态组创建</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
@@ -44,8 +41,30 @@
         </el-form>
         <template #footer>
           <span class="dialog-footer">
-            <el-button @click="handleEdit(null, false)">取消</el-button>
+            <el-button @click="dialogEditFormVisible = false">取消</el-button>
             <el-button type="primary" @click="submitEditForm(editFormRef)">确认</el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="dialogGroupVisible" title="动态组成员" width="30%">
+        <el-table :data="tableGroupData.list" style="width: 100%">
+          <el-table-column prop="membertype" label="成员类型" :formatter="
+            (row, column, cellValue) => {
+              let status = {
+                '0': '群组',
+                '1': '用户',
+              };
+              return status[cellValue];
+            }
+          "></el-table-column>
+          <el-table-column prop="group" label="群组号" />
+          <el-table-column prop="isdn" label="用户号" />
+          <el-table-column prop="userpriority" label="优先级" width="80px" />
+        </el-table>
+        <template #footer>
+          <span>
+            <el-button type="primary" @click="dialogGroupVisible = false">关闭</el-button>
           </span>
         </template>
       </el-dialog>
@@ -79,16 +98,16 @@
 
         <el-table-column label="Operations" width="400px">
           <template #default="scope">
-            <el-button size="small" @click="handleEdit(scope.row.group, true)">编辑</el-button>
+            <el-button size="small" @click="handleEdit(scope.row, true)">编辑</el-button>
             <el-popconfirm title="确定删除?" @confirm="handleDelete(scope.$index, scope.row)">
               <template #reference>
                 <el-button size="small" type="danger">删除</el-button>
               </template>
             </el-popconfirm>
-
+            <el-button size="small" @click="handleGroupList(scope.row)">成员</el-button>
             <el-button size="small" @click="handleSubscribe(scope.row)">订阅和加入组呼</el-button>
             <el-button size="small" @click="handleCall(scope.row)">{{
-              currentEditRow == scope.row.group && isTalking ? "组呼放权" : "组呼发起/抢权"
+              scope.row.isTalking ? "组呼放权" : "组呼发起/抢权"
             }}</el-button>
           </template>
         </el-table-column>
@@ -103,6 +122,8 @@ import { storeToRefs } from "pinia";
 import { reactive, ref, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
+import { dialStatus, otherStatus } from "../config/status";
+
 
 const router = useRouter()
 const icpStore = useIcpStore();
@@ -111,10 +132,12 @@ const rspRef = ref(0);
 const { cloudICP, success } = storeToRefs(icpStore);
 const isTalking = ref(false);
 const tableData = reactive({ list: [] });
+const tableGroupData = reactive({ list: [] });
 
 const editFormRef = ref(null);
 const currentEditRow = ref(null);
 const dialogEditFormVisible = ref(false);
+const dialogGroupVisible = ref(false);
 const editParam = reactive({
   addlist: "",
   dellist: "",
@@ -134,12 +157,44 @@ watch(rspRef, (newVal) => {
   }
 })
 
+const handleGroupList = async (value) => {
+  let data = await findGroupList(value)
+  let { rsp, desc, list } = data
+
+  if (rsp == 0) {
+    tableGroupData.list = list;
+    dialogGroupVisible.value = true
+
+  } else {
+    ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
+  }
+  rspRef.value = rsp
+}
+
+const findGroupList = (value) => {
+  return new Promise((resolve, reject) => {
+    cloudICP.value.dispatch.query.queryDynamicGroupMembers({
+      grpid: value.group,
+      callback: (data) => {
+        resolve(data)
+      }
+    })
+  })
+}
+
 const handleEdit = (value, visible) => {
+  if (icpStore.isdn != value.setupdcid) {
+    return ElMessage.error('只能编辑自己创建的');
+  }
   dialogEditFormVisible.value = visible;
-  currentEditRow.value = value;
+  currentEditRow.value = value.group;
 };
 
 const handleDelete = (index, value) => {
+  if (icpStore.isdn != value.setupdcid) {
+    return ElMessage.error('只能删除自己创建的');
+  }
+
   cloudICP.value.dispatch.group.deleteDynamicGroup({
     grpid: value.group,
     callback: ({ rsp, desc }) => {
@@ -147,7 +202,7 @@ const handleDelete = (index, value) => {
         ElMessage.success("删除成功");
         tableData.list.splice(index, 1);
       } else {
-        ElMessage.error(desc);
+        ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
       }
       rspRef.value = rsp
 
@@ -170,6 +225,9 @@ const submitForm = (formEl) => {
         ? param.grouplist.split(",").map((v) => ({ isdn: v }))
         : [],
     };
+    if (!params.uelist.length && !params.grouplist.length) {
+      return ElMessage.error(`用户成员列表和群组列表不能同时为空`);
+    }
     if (valid) {
       cloudICP.value.dispatch.group.addDynamicGroup({
         ...params,
@@ -177,8 +235,9 @@ const submitForm = (formEl) => {
           if (rsp == 0) {
             formEl.resetFields();
             ElMessage.success("创建成功");
+            findGroup()
           } else {
-            ElMessage.error(desc);
+            ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
           }
           dialogFormVisible.value = false
           rspRef.value = rsp
@@ -212,8 +271,9 @@ const submitEditForm = (formEl) => {
             formEl.resetFields();
             dialogEditFormVisible.value = false;
             ElMessage.success("修改成功");
+            findGroup()
           } else {
-            ElMessage.error(desc);
+            ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
           }
           rspRef.value = rsp
 
@@ -230,7 +290,7 @@ const handleSubscribe = (value) => {
       if (rsp == 0) {
         ElMessage.success("订阅成功");
       } else {
-        ElMessage.error(desc);
+        ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
       }
       rspRef.value = rsp
 
@@ -238,32 +298,52 @@ const handleSubscribe = (value) => {
   });
 };
 
-const handleCall = (value) => {
-  currentEditRow.value = value.group;
-  cloudICP.value.dispatch.group[
-    isTalking.value ? "pttreleaseTalkingGroup" : "pttTalkingGroup"
-  ]({
-    grpid: value.group,
-    callback: ({ rsp, desc }) => {
-      if (rsp == 0) {
-        ElMessage.success(isTalking.value ? "放权成功" : "组呼或者抢权成功");
-        isTalking.value = !isTalking.value;
-      } else {
-        ElMessage.error(desc);
-      }
-      rspRef.value = rsp
+const handleCall = async (value) => {
+  let data = await findGroupList(value)
+  let { rsp, desc, list } = data
 
-    },
-  });
+  if (rsp == 0) {
+    let isIngroup = list.map(v => v.isdn).includes(icpStore.isdn)
+    if (!isIngroup) {
+      return ElMessage.error('用户不在该动态组！');
+    }
+    currentEditRow.value = value.group;
+    cloudICP.value.dispatch.group[
+      value.isTalking ? "pttreleaseTalkingGroup" : "pttTalkingGroup"
+    ]({
+      grpid: value.group,
+      callback: ({ rsp, desc }) => {
+        if (rsp == 0) {
+          ElMessage.success(value.isTalking ? "放权成功" : "组呼或者抢权成功");
+          value.isTalking = !value.isTalking
+        } else {
+          ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
+        }
+        rspRef.value = rsp
+
+      },
+    });
+
+  } else {
+    ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
+  }
+  rspRef.value = rsp
+
+
 };
 
-const findGroup = () => {
+const findGroup = async() => {
+  await new Promise((res,rej)=>{
+    setTimeout(() => {
+      res()
+    }, 500)
+  })
   cloudICP.value.dispatch.query.queryDynamicGroup({
     callback: ({ rsp, desc, list }) => {
       if (rsp == 0) {
         tableData.list = list;
       } else {
-        ElMessage.error(desc);
+        ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
       }
       rspRef.value = rsp
     },

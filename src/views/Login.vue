@@ -15,6 +15,9 @@
         </el-form-item>
         <div class="login-btn">
           <el-button type="primary" @click="submitForm">登录</el-button>
+            <el-button @click="download('/MSP.zip')">
+            下载
+            </el-button>
         </div>
       </el-form>
     </div>
@@ -28,6 +31,7 @@ import { useIcpStore } from "../store/icp";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import { download } from '../utils/utils'
 import { sameStatus, loginStatus } from "../config/status";
 
 export default {
@@ -63,11 +67,12 @@ export default {
           let person = {
             ...param,
             force: param.force.toString(),
-            callback: function ({ rsp, desc }) {
+            callback: function ({ rsp, desc, isdn }) {
               if (rsp == 0) {
                 ElMessage.success("登录成功");
                 router.push("/");
                 localStorage.setItem("ms_username", param.user);
+                icpStore.isdn = isdn
               } else {
                 ElMessage.error(`错误码:${rsp},${loginStatus[rsp] || desc}`);
               }
@@ -111,6 +116,7 @@ export default {
       login,
       submitForm,
       cloudICP,
+      download
     };
   },
 };
@@ -157,6 +163,7 @@ export default {
   width: 100%;
   height: 36px;
   margin-bottom: 10px;
+  margin-left: 0;
 }
 
 .login-tips {

@@ -19,6 +19,27 @@ export default{
       }
     }
   },
+  OnCallConnect: {
+    rsp: {
+      2003: '语音呼出通话事件',
+      2007: '语音呼入通话事件',
+      3003: '视频呼出通话事件',
+      3006: '视频呼入通话事件',
+    },
+    value: {
+      callee: '被叫号码',
+      caller: '主叫号码',
+      cid: '语音呼叫id',
+      calltype: {
+        video: '视频呼叫',
+        voice: '语音呼叫',
+        discreetlisten: '缜密侦听',
+        monitor: '监控视频',
+        halfdial: '半双工点呼',
+        dispatch: '分发',
+      }
+    }
+  },
   OnGroupCallStatusNotify: {
     rsp: {
       4027: '组呼激活',

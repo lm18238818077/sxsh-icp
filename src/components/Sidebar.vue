@@ -14,7 +14,9 @@
         <template v-if="item.subs">
           <el-submenu :index="item.index" :key="item.index">
             <template #title>
-              <i :class="item.icon"></i>
+              <el-icon>
+              <component :is="item.icon" />
+            </el-icon>
               <span>{{ item.title }}</span>
             </template>
             <template v-for="subItem in item.subs">
@@ -40,7 +42,9 @@
         </template>
         <template v-else>
           <el-menu-item :index="item.index" :key="item.index">
-            <i :class="item.icon"></i>
+            <el-icon>
+              <component :is="item.icon" />
+            </el-icon>
             <template #title>{{ item.title }}</template>
           </el-menu-item>
         </template>
@@ -58,25 +62,19 @@ export default {
   setup() {
     const items = [
       {
-        icon: "el-icon-lx-home",
+        icon: "House",
         index: "/dashboard",
         title: "系统首页",
       },
       {
-        icon: "el-icon-lx-home",
+        icon: "Phone",
         index: "/voice",
         title: "语音视频业务",
       },
       {
-        icon: "el-icon-lx-warn",
-        index: "2",
-        title: "群组业务",
-        subs: [
-          {
-            index: "/groupcreate",
-            title: "动态组创建",
-          },
-        ],
+        icon: "Folder",
+        index: "/groupcreate",
+        title: "动态组创建",
       },
     ];
 

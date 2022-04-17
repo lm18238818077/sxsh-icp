@@ -11,15 +11,15 @@
           item.title
         }}</router-link>
         <span class="tags-li-icon" @click="closeTags(index)">
-          <i class="el-icon-close"></i>
+          <el-icon class="el-icon--right"><close /></el-icon>
         </span>
       </li>
     </ul>
     <div class="tags-close-box">
       <el-dropdown @command="handleTags">
-        <el-button size="mini" type="primary">
+        <el-button size="small" type="primary">
           标签选项
-          <i class="el-icon-arrow-down el-icon--right"></i>
+          <el-icon class="el-icon--right"><arrow-down /></el-icon>
         </el-button>
         <template #dropdown>
           <el-dropdown-menu size="small">

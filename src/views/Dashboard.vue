@@ -21,7 +21,7 @@
             3.MSP媒体服务依赖于C++运行库，请确保运行机器上安装有vc2015运行库。
           </el-descriptions-item>
           <el-descriptions-item label="下载资源">
-            <el-button type="primary" @click="download">
+            <el-button type="primary" @click="download('/MSP.zip')">
             下载
             </el-button>
           </el-descriptions-item>
@@ -33,10 +33,5 @@
 </template>
 
 <script setup name="dashboard">
-const download = () => {
-  const iframe = document.createElement('iframe');
-  iframe.src = '/MSP.zip';
-  iframe.style.display = 'none';
-  document.body.appendChild(iframe);
-}
+import { download } from '../utils/utils'
 </script>

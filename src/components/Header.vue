@@ -2,8 +2,10 @@
   <div class="header">
     <!-- 折叠按钮 -->
     <div class="collapse-btn" @click="collapseChage">
-      <i v-if="!collapse" class="el-icon-s-fold"></i>
-      <i v-else class="el-icon-s-unfold"></i>
+      <el-icon>
+        <component :is="collapse ? 'expand' : 'fold'"></component>
+      </el-icon>
+
     </div>
     <div class="logo">后台管理系统</div>
     <div class="header-right">
@@ -16,7 +18,7 @@
         <el-dropdown class="user-name" trigger="click" @command="handleCommand">
           <span class="el-dropdown-link">
             {{ username }}
-            <i class="el-icon-caret-bottom"></i>
+          <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
