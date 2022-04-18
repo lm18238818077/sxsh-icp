@@ -8,18 +8,25 @@
     <div class="container">
       <el-button type="primary" @click="dialogFormVisible = true">创建</el-button>
       <el-button type="primary" @click="findGroup">查询</el-button>
-      <el-dialog v-model="dialogFormVisible" title="创建动态组"  width="700px">
-        <el-form ref="formRef" :model="param" label-width="120px" class="groupCreateForm">
-          <el-form-item label="动态群组别名" prop="alias" :rules="[{ required: true, message: '动态群组别名必填' }]">
-            <el-input v-model="param.alias"
+
+      <el-dialog v-model="dialogFormVisible" title="创建动态组" width="700px">
+        <el-form ref="formRef" :model="param" label-width="150px" class="groupCreateForm" :rules="addrules">
+          <el-form-item label="动态群组别名" prop="alias">
+            <el-input v-model.trim="param.alias"
               placeholder="不能为空和空字符串，字符串最大长度为32个字节，不能用中英文逗号、单引号、双引号、分号、/、\符号、&符号、<符号、>符号，不能有连续的空格及连续的百分号，3个字节对应1个中文字">
             </el-input>
           </el-form-item>
+          <el-form-item label="动态组最大通话时长" prop="maxperiod">
+            <el-input v-model.number.trim="param.maxperiod" type="text" placeholder="取值范围是1～65535。单位为秒。"></el-input>
+          </el-form-item>
+          <el-form-item label="动态组优先级" prop="priority">
+            <el-input v-model.number.trim="param.priority" type="text" placeholder="取值范围是1～255，数字越小优先级越高"></el-input>
+          </el-form-item>
           <el-form-item label="用户成员列表" prop="uelist">
-            <el-input v-model="param.uelist" type="textarea" placeholder="用英文,分割"></el-input>
+            <el-input v-model.trim="param.uelist" type="textarea" placeholder="用英文,分割"></el-input>
           </el-form-item>
           <el-form-item label="静态群组列表" prop="grouplist">
-            <el-input v-model="param.grouplist" type="textarea" placeholder="用英文,分割"></el-input>
+            <el-input v-model.trim="param.grouplist" type="textarea" placeholder="用英文,分割"></el-input>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -30,13 +37,13 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="dialogEditFormVisible" title="编辑动态组"  width="700px">
-        <el-form ref="editFormRef" :model="editParam" label-width="120px" class="groupCreateForm">
+      <el-dialog v-model="dialogEditFormVisible" title="编辑动态组" width="700px">
+        <el-form ref="editFormRef" :model="editParam" label-width="120px" class="groupCreateForm" :rules="editrules">
           <el-form-item label="待添加用户ID" prop="addlist">
-            <el-input v-model="editParam.addlist" type="textarea" placeholder="用英文,分割"></el-input>
+            <el-input v-model.trim="editParam.addlist" type="textarea" placeholder="用英文,分割"></el-input>
           </el-form-item>
           <el-form-item label="待删除用户ID" prop="dellist">
-            <el-input v-model="editParam.dellist" type="textarea" placeholder="用英文,分割"></el-input>
+            <el-input v-model.trim="editParam.dellist" type="textarea" placeholder="用英文,分割"></el-input>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -83,20 +90,20 @@
           }
         "></el-table-column>
         <el-table-column prop="departmentid" label="部门id" width="80px" />
-        <el-table-column prop="departmentname" label="部门名称" width="80px"/>
-        <el-table-column prop="group" label="群组号"  width="140px"/>
+        <el-table-column prop="departmentname" label="部门名称" width="80px" />
+        <el-table-column prop="group" label="群组号" width="140px" />
         <el-table-column prop="grpstate" label="群组状态" width="90px" :formatter="
           (row, column, cellValue) => {
             let status = { '0': 'disable', '1': 'enable' };
             return status[cellValue];
           }
         " />
-        <el-table-column prop="maxperiod" label="最大会话时长"  width="120px"/>
-        <el-table-column prop="name" label="名称"  />
+        <el-table-column prop="maxperiod" label="最大会话时长" width="120px" />
+        <el-table-column prop="name" label="名称" />
         <el-table-column prop="priority" label="优先级" width="80px" />
-        <el-table-column prop="setupdcid" label="创建者用户id" width="120px"/>
+        <el-table-column prop="setupdcid" label="创建者用户id" width="120px" />
 
-        <el-table-column label="Operations"  width="440px">
+        <el-table-column label="Operations" width="440px">
           <template #default="scope">
             <el-button size="small" @click="handleEdit(scope.row, true)">编辑</el-button>
             <el-popconfirm title="确定删除?" @confirm="handleDelete(scope.$index, scope.row)">
@@ -149,7 +156,117 @@ const param = reactive({
   uelist: "",
   grouplist: "",
   alias: "",
+  maxperiod: "",
+  priority: "",
 });
+
+const addrules = reactive({
+  alias: [
+    { required: true, message: '请输入动态群组别名', trigger: 'blur' },
+  ],
+  uelist: [
+    {
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (value === '' && param.grouplist === '') {
+          callback(new Error('用户成员列表和群组列表不能同时为空'))
+        } else {
+          if (value && value.split(',').length > 200) {
+            callback(new Error('最大值为200个'))
+          } else {
+            callback()
+          }
+        }
+      }
+    }
+  ],
+  grouplist: [
+    {
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (value && value.split(',').length > 8) {
+          callback(new Error('最大值为8个'))
+        }
+        if (!formRef.value) return
+        formRef.value.validateField('uelist', () => null)
+        callback()
+
+      }
+    }
+  ],
+  maxperiod: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (value === '') {
+          callback(new Error('请输入最大通话时长'))
+        } else {
+          if (!/^\d+$/.test(value)) {
+            callback(new Error('请输入数字'))
+          } else {
+            if (value < 1 || value > 65535) {
+              callback(new Error('取值范围是1～65535'))
+            }
+            callback()
+          }
+        }
+      }
+    }
+  ],
+  priority: [
+    {
+      required: true,
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (value === '') {
+          callback(new Error('请输入动态组优先级'))
+        } else {
+          if (!/^\d+$/.test(value)) {
+            callback(new Error('请输入数字'))
+          } else {
+            if (value < 1 || value > 255) {
+              callback(new Error('取值范围是1～255'))
+            }
+            callback()
+          }
+        }
+      }
+    }
+  ],
+})
+
+const editrules = reactive({
+  addlist: [
+    {
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (value === '' && editParam.dellist === '') {
+          callback(new Error('待添加用户和待删除用户不能同时为空'))
+        } else {
+          if (value && value.split(',').length > 200) {
+            callback(new Error('最大值为200个'))
+          } else {
+            callback()
+          }
+        }
+      }
+    }
+  ],
+  dellist: [
+    {
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (value && value.split(',').length > 200) {
+          callback(new Error('最大值为200个'))
+        }
+        if (!editFormRef.value) return
+        editFormRef.value.validateField('addlist', () => null)
+        callback()
+      }
+    }
+  ],
+})
 
 watch(rspRef, (newVal) => {
   if (newVal == -3) {
@@ -216,8 +333,8 @@ const submitForm = (formEl) => {
     let params = {
       alias: param.alias,
       grpid: "0",
-      maxperiod: "60000",
-      priority: "1",
+      maxperiod: param.maxperiod,
+      priority: param.priority,
       uelist: param.uelist
         ? param.uelist.split(",").map((v) => ({ isdn: v }))
         : [],
@@ -225,9 +342,7 @@ const submitForm = (formEl) => {
         ? param.grouplist.split(",").map((v) => ({ isdn: v }))
         : [],
     };
-    if (!params.uelist.length && !params.grouplist.length) {
-      return ElMessage.error(`用户成员列表和群组列表不能同时为空`);
-    }
+    console.log(params)
     if (valid) {
       cloudICP.value.dispatch.group.addDynamicGroup({
         ...params,
@@ -244,16 +359,13 @@ const submitForm = (formEl) => {
 
         },
       });
-    } else {
-      console.log("error submit!");
-      return false;
     }
   });
 };
 
 const submitEditForm = (formEl) => {
   if (!formEl) return;
-  
+
   formEl.validate((valid) => {
     let params = {
       grpid: currentEditRow.value,
@@ -264,9 +376,6 @@ const submitEditForm = (formEl) => {
         ? editParam.dellist.split(",").map((v) => ({ isdn: v }))
         : [],
     };
-    if (!params.addlist.length && !params.dellist.length) {
-      return ElMessage.error(`待添加用户和待删除用户不能同时为空`);
-    }
     if (valid) {
       cloudICP.value.dispatch.group.modifyDynamicGroup({
         ...params,
@@ -336,11 +445,11 @@ const handleCall = async (value) => {
 
 };
 
-const findGroup = async() => {
-  await new Promise((res,rej)=>{
+const findGroup = async () => {
+  await new Promise((res, rej) => {
     setTimeout(() => {
       res()
-    }, 500)
+    }, 1000)
   })
   cloudICP.value.dispatch.query.queryDynamicGroup({
     callback: ({ rsp, desc, list }) => {
