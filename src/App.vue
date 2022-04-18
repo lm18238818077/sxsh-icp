@@ -310,9 +310,8 @@ cloudICP.dispatch.event.register({
       message: h('div',{class: 'onconnectcall'},[h('p', `主叫号码: ${value.caller}`),
       h('p', `被叫号码: ${value.callee}`), 
       h('p', h('button', { class: 'el-button el-button--primary el-button--small', onClick: () => { onCallClose(value) } }, h('span','挂断')))]),
-      type: 'success',
       duration: 0,
-      icon: 'moon'
+      icon: 'phone'
     })
     
     

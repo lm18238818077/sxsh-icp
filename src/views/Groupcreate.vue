@@ -8,7 +8,7 @@
     <div class="container">
       <el-button type="primary" @click="dialogFormVisible = true">创建</el-button>
       <el-button type="primary" @click="findGroup">查询</el-button>
-      <el-dialog v-model="dialogFormVisible" title="创建动态组">
+      <el-dialog v-model="dialogFormVisible" title="创建动态组"  width="700px">
         <el-form ref="formRef" :model="param" label-width="120px" class="groupCreateForm">
           <el-form-item label="动态群组别名" prop="alias" :rules="[{ required: true, message: '动态群组别名必填' }]">
             <el-input v-model="param.alias"
@@ -30,7 +30,7 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="dialogEditFormVisible" title="编辑动态组">
+      <el-dialog v-model="dialogEditFormVisible" title="编辑动态组"  width="700px">
         <el-form ref="editFormRef" :model="editParam" label-width="120px" class="groupCreateForm">
           <el-form-item label="待添加用户ID" prop="addlist">
             <el-input v-model="editParam.addlist" type="textarea" placeholder="用英文,分割"></el-input>
@@ -47,7 +47,7 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="dialogGroupVisible" title="动态组成员" width="30%">
+      <el-dialog v-model="dialogGroupVisible" title="动态组成员" width="600px">
         <el-table :data="tableGroupData.list" style="width: 100%">
           <el-table-column prop="membertype" label="成员类型" :formatter="
             (row, column, cellValue) => {
@@ -69,7 +69,7 @@
         </template>
       </el-dialog>
 
-      <el-table :data="tableData.list" style="width: 100%">
+      <el-table :data="tableData.list" style="width: 100%" size="large">
         <el-table-column prop="category" label="群组类型" width="100px" :formatter="
           (row, column, cellValue) => {
             let status = {
@@ -83,20 +83,20 @@
           }
         "></el-table-column>
         <el-table-column prop="departmentid" label="部门id" width="80px" />
-        <el-table-column prop="departmentname" label="部门名称" />
-        <el-table-column prop="group" label="群组号" />
+        <el-table-column prop="departmentname" label="部门名称" width="80px"/>
+        <el-table-column prop="group" label="群组号"  width="140px"/>
         <el-table-column prop="grpstate" label="群组状态" width="90px" :formatter="
           (row, column, cellValue) => {
             let status = { '0': 'disable', '1': 'enable' };
             return status[cellValue];
           }
         " />
-        <el-table-column prop="maxperiod" label="最大会话时长" />
-        <el-table-column prop="name" label="名称" />
+        <el-table-column prop="maxperiod" label="最大会话时长"  width="120px"/>
+        <el-table-column prop="name" label="名称"  />
         <el-table-column prop="priority" label="优先级" width="80px" />
-        <el-table-column prop="setupdcid" label="创建者用户id" />
+        <el-table-column prop="setupdcid" label="创建者用户id" width="120px"/>
 
-        <el-table-column label="Operations" width="400px">
+        <el-table-column label="Operations"  width="440px">
           <template #default="scope">
             <el-button size="small" @click="handleEdit(scope.row, true)">编辑</el-button>
             <el-popconfirm title="确定删除?" @confirm="handleDelete(scope.$index, scope.row)">
@@ -253,6 +253,7 @@ const submitForm = (formEl) => {
 
 const submitEditForm = (formEl) => {
   if (!formEl) return;
+  
   formEl.validate((valid) => {
     let params = {
       grpid: currentEditRow.value,
@@ -263,6 +264,9 @@ const submitEditForm = (formEl) => {
         ? editParam.dellist.split(",").map((v) => ({ isdn: v }))
         : [],
     };
+    if (!params.addlist.length && !params.dellist.length) {
+      return ElMessage.error(`待添加用户和待删除用户不能同时为空`);
+    }
     if (valid) {
       cloudICP.value.dispatch.group.modifyDynamicGroup({
         ...params,

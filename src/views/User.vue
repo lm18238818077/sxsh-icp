@@ -15,19 +15,13 @@
               </div>
             </template>
             <div class="info">
-              <div class="info-image" @click="showDialog">
+              <div class="info-image">
                 <img :src="avatarImg" />
                 <span class="info-edit">
                   <el-icon><camera-filled /></el-icon>
                 </span>
               </div>
               <div class="info-name">{{ name }}</div>
-              <CropImage
-                :visible="dialogVisible"
-                @change="handleCropImage"
-                :imgsrc="avatarImg"
-                @closed="dialogVisible = false"
-              />
             </div>
           </el-card>
         </el-col>
@@ -70,7 +64,6 @@ import { useIcpStore } from "../store/icp";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
 import avatar from "../assets/img/img.jpg";
-import CropImage from "../components/CropImage/index.vue";
 
 const avatarImg = ref(avatar);
 const dialogVisible = ref(false);
@@ -119,14 +112,6 @@ const onSubmit = () => {
   });
 };
 
-const showDialog = () => {
-  dialogVisible.value = true;
-};
-
-const handleCropImage = (value) => {
-  dialogVisible.value = false;
-  avatarImg.value = value;
-};
 </script>
 
 <style scoped>
