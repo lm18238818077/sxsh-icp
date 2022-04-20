@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  webserver:
+    image: sxsh-web:0.1
+    container_name: webserver
+    build: 
+      context: ./
+      dockerfile: ./docker/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - D:/workspace/sxsh-icp/dist:/var/www/dist
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+
+
+networks:
+  app-network:  # 一个具体网络的条目名称
+    #name: nginx-net # 网络名称，默认为"工程名称_网络条目名称"
+    driver: bridge # 网络模式，默认为 bridge
