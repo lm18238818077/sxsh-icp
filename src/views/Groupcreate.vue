@@ -67,6 +67,13 @@
           "></el-table-column>
           <el-table-column prop="group" label="群组号" />
           <el-table-column prop="isdn" label="用户号" />
+          <el-table-column prop="statusvalue" label="是否在线">
+            <template #default="{ row }">
+              <el-badge is-dot class="dotitem" :type="row.statusvalue == 4011 ? 'success' : 'info'">
+                <p>{{ row.statusvalue == 4011 ? '在线' : '离线' }}</p>
+              </el-badge>
+            </template>
+          </el-table-column>
           <el-table-column prop="userpriority" label="优先级" width="80px" />
         </el-table>
         <template #footer>
@@ -114,7 +121,7 @@
             <el-button size="small" @click="handleGroupList(scope.row)">成员</el-button>
             <el-button size="small" @click="handleSubscribe(scope.row)">订阅和加入组呼</el-button>
             <el-button size="small" @click="handleCall(scope.row)">{{
-              scope.row.isTalking ? "组呼放权" : "组呼发起/抢权"
+                scope.row.isTalking ? "组呼放权" : "组呼发起/抢权"
             }}</el-button>
           </template>
         </el-table-column>
@@ -281,7 +288,12 @@ const handleGroupList = async (value) => {
   if (rsp == 0) {
     tableGroupData.list = list;
     dialogGroupVisible.value = true
-
+    cloudICP.value.dispatch.voice.subscribeUserStatus({
+      reslist: list.map(v => ({ isdn: v.isdn })),
+      callback: ({ rsp, desc }) => {
+        console.log(rsp, desc, 'subscribeUserStatus', list.map(v => ({ isdn: v.isdn })))
+      }
+    })
   } else {
     ElMessage.error(`错误码:${rsp},${otherStatus[rsp] || desc}`);
   }
@@ -474,10 +486,34 @@ cloudICP.value.dispatch.event.register({
     console.log(value, "OnTalkingGroupCallPTTStart");
   },
 });
+
+/**
+ *  注册用户状态变化
+ */
+cloudICP.value.dispatch.event.register({
+  eventType: "VoiceNotify",
+  eventName: "OnUserStatusNotify",
+  callback: ({ eventName, list }) => {
+    const resObj = {}
+    list.forEach(v => {
+      resObj[v.isdn] = v.statusvalue
+    })
+    tableGroupData.list.forEach(v => {
+      if (resObj[v.isdn]) {
+        v.statusvalue = resObj[v.isdn]
+      }
+    })
+  }
+});
 </script>
 
 <style scoped>
 .groupCreateForm {
   width: 600px;
+}
+
+.dotitem .el-badge__content {
+  top: 4px;
+  right: 1px;
 }
 </style>
