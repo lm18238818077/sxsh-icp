@@ -512,7 +512,7 @@ cloudICP.value.dispatch.event.register({
   width: 600px;
 }
 
-.dotitem .el-badge__content {
+.dotitem >>> .el-badge__content {
   top: 4px;
   right: 1px;
 }
