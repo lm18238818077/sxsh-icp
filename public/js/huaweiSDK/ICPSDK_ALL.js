@@ -1,10 +1,10 @@
 /* eslint-disable no-undef */
 
 /**
- * CloudICP 20.0
- * version: eSDK ICP V600R020C10SPC100
+ * CloudICP 22.0
+ * version: ICP eAPP610_TD V100R006C00SPC830
  */
-var sdkVersion = "v20.0"
+var sdkVersion = "eAPP610_TD V100R006C00SPC830"
 var cloudICP;
 
 (function(root, factory) {
@@ -52,6 +52,18 @@ var cloudICP;
             return;
         }
 
+        if (undefined == config["videoConfLocalWindow"]) {
+            config["videoConfLocalWindow"] = true;
+        } else {
+            config["videoConfLocalWindow"] = config["videoConfLocalWindow"];
+        }
+
+        if (undefined == config["demo_wssflow_enable"]) {
+            config["demo_wssflow_enable"] = false;
+        } else {
+            config["demo_wssflow_enable"] = config["demo_wssflow_enable"];
+        }
+
         if (!config["serverWSPort"] || !this.util.checkPort(config["serverWSPort"])) {
             config["serverWSPort"] = "8015";
         }
@@ -92,6 +104,7 @@ var cloudICP;
             config["ringFlag"] = "0";
         }
 
+        config["mspVersion"] = "060.830.001";
         config["sdkServerHttpTimeout"] = "60000";
 
         this.config = config;
@@ -520,7 +533,7 @@ function logoutCleanUp() {
         cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
         // 删除所有振铃
-        var param = "{\"description\":\"msp_clean_tone\", \"cmd\": 131080}";
+        var param = "{\"description\":\"msp_clean_tone\", \"cmd\": 131076}";
 
         cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -646,6 +659,65 @@ ICPSDK_Dispatch_Conf.prototype.createConf = function(param) {
         return;
     }
 
+    var strWindowinfo = {};
+    if (!!param["windowInfo"]) {
+        strWindowinfo = param["windowInfo"];
+    }
+    if (param["windowInfo"] == undefined || undefined == param["windowInfo"]["mode"] || !cloudICP.util.checkmode(param["windowInfo"]["mode"])) {
+        console.log("createConf: The mode is invalid, use defult value " + cloudICP.config["mode"]);
+        strWindowinfo["mode"] = cloudICP.config["mode"];
+    }
+    if (param["windowInfo"] != undefined) {
+        if ("wssflow" == strWindowinfo["mode"]) {//推流模式
+            if (undefined == param["windowInfo"]["width"] || !cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647 || param["windowInfo"]["width"] < 0) {
+                result["desc"] = "createConf: The width is invalid.";
+                param["callback"](result);
+                return;
+            }
+            if (undefined == param["windowInfo"]["height"] || !cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["height"] > 2147483647 || param["windowInfo"]["height"] < 0) {
+                result["desc"] = "createConf: The height is invalid.";
+                param["callback"](result);
+                return;
+            }
+        }
+        else if ("window" == strWindowinfo["mode"]) {//弹窗模式
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posX"])) {
+                result["desc"] += "createConf: The posX is invalid, use defult value 400; ";
+                strWindowinfo["posX"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posY"])) {
+                result["desc"] += "createConf: The posY is invalid, use defult value 400; ";
+                strWindowinfo["posY"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["width"])) {
+                result["desc"] += "createConf: The width is invalid, use defult value 640; ";
+                strWindowinfo["width"] = 640;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["height"])) {
+                result["desc"] += "createConf: The height is invalid, use defult value 480; ";
+                strWindowinfo["height"] = 480;
+            }
+            if (undefined == param["windowInfo"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["windowInfo"]["showToolbar"])) {
+                result["desc"] += "createConf: The showToolbar is invalid, use defult value 1; ";
+                strWindowinfo["showToolbar"] = 1;
+            }
+            if (undefined == param["windowInfo"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["windowInfo"]["buttonIDs"])) {
+                result["desc"] += "createConf: The buttonIDs is invalid, use defult value 0; ";
+                strWindowinfo["buttonIDs"] = 0;
+            }
+        } else {
+            result["desc"] = "createConf: The mode is invalid.";
+            param["callback"](result);
+            return;
+        }
+    } else {
+        strWindowinfo["showToolbar"] = 1;
+        strWindowinfo["buttonIDs"] = 0;
+        strWindowinfo["width"] = 800;
+        strWindowinfo["height"] = 450;
+    }
+    cloudICP.util.callStatusMgr.windowInfos[2147483647] = strWindowinfo;
+
     var callStatusMgr = cloudICP.util.callStatusMgr;
 
     if (callStatusMgr.currentGoingConf != 0) {
@@ -756,7 +828,7 @@ ICPSDK_Dispatch_Conf.prototype.createConf = function(param) {
     *  callback :
     * }
 */
-ICPSDK_Dispatch_Conf.prototype.joinConf = function(param) {
+ICPSDK_Dispatch_Conf.prototype.joinConf = function (param) {
     if (undefined == param) {
         cloudICP.util.log({ "logLevel": "error", "logMsg": "joinConf: param is invalid" });
         return;
@@ -777,6 +849,7 @@ ICPSDK_Dispatch_Conf.prototype.joinConf = function(param) {
         param["callback"](result);
         return;
     }
+
     //check param valid
     result["rsp"] = "-2";
 
@@ -815,6 +888,59 @@ ICPSDK_Dispatch_Conf.prototype.joinConf = function(param) {
         return;
     }
 
+    var strWindowinfo = {};
+    if (!!param["windowInfo"]) {
+        strWindowinfo = param["windowInfo"];
+    }
+    if (param["windowInfo"] == undefined || undefined == param["windowInfo"]["mode"] || !cloudICP.util.checkmode(param["windowInfo"]["mode"])) {
+        console.log("joinConf: The mode is invalid, use defult value " + cloudICP.config["mode"]);
+        strWindowinfo["mode"] = cloudICP.config["mode"];
+    }
+    if (param["windowInfo"] != undefined) {
+        if ("wssflow" == strWindowinfo["mode"]) {//推流模式
+            if (undefined == param["windowInfo"]["width"] || !cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647 || param["windowInfo"]["width"] < 0) {
+                result["desc"] = "joinConf: The width is invalid.";
+                param["callback"](result);
+                return;
+            }
+            if (undefined == param["windowInfo"]["height"] || !cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["height"] > 2147483647 || param["windowInfo"]["height"] < 0) {
+                result["desc"] = "joinConf: The height is invalid.";
+                param["callback"](result);
+                return;
+            }
+        }
+        else if ("window" == strWindowinfo["mode"]) {//弹窗模式
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posX"])) {
+                result["desc"] += "joinConf: The posX is invalid, use defult value 400; ";
+                strWindowinfo["posX"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posY"])) {
+                result["desc"] += "joinConf: The posY is invalid, use defult value 400; ";
+                strWindowinfo["posY"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["width"])) {
+                result["desc"] += "joinConf: The width is invalid, use defult value 640; ";
+                strWindowinfo["width"] = 640;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["height"])) {
+                result["desc"] += "joinConf: The height is invalid, use defult value 480; ";
+                strWindowinfo["height"] = 480;
+            }
+            if (undefined == param["windowInfo"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["windowInfo"]["showToolbar"])) {
+                result["desc"] += "joinConf: The showToolbar is invalid, use defult value 1; ";
+                strWindowinfo["showToolbar"] = 1;
+            }
+            if (undefined == param["windowInfo"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["windowInfo"]["buttonIDs"])) {
+                result["desc"] += "joinConf: The buttonIDs is invalid, use defult value 0; ";
+                strWindowinfo["buttonIDs"] = 0;
+            }
+        } else {
+            result["desc"] = "joinConf: The mode is invalid.";
+            param["callback"](result);
+            return;
+        }
+    }
+
     if (cloudICP.util.callStatusMgr.currentCallState == cloudICP.util.callStatusMgr.RINGING) {
         result["rsp"] = "-4";
         result["desc"] = "joinConf: There is a call is ringing."
@@ -824,6 +950,7 @@ ICPSDK_Dispatch_Conf.prototype.joinConf = function(param) {
 
     var callStatusMgr = cloudICP.util.callStatusMgr;
 
+    callStatusMgr.windowInfos[param["unifiedAccessCode"]] = strWindowinfo;
     if (callStatusMgr.currentGoingConf != 0) {
         result["rsp"] = "-5";
         result["desc"] = "joinConf: The number of conf is limited to " + this.MAX_CONF_NUM;
@@ -997,20 +1124,16 @@ ICPSDK_Dispatch_Conf.prototype.acceptVideoConf = function(param) {
         param["callback"](result);
         return;
     }
-
+	
+    var strWindowinfo = {};
+	if (!!param["windowInfo"]){
+		strWindowinfo = param["windowInfo"];
+	}
+    if (param["windowInfo"] == undefined || undefined == param["windowInfo"]["mode"] || !cloudICP.util.checkmode(param["windowInfo"]["mode"])) {
+        console.log("acceptVideoConf: The mode is invalid, use defult value " + cloudICP.config["mode"]);
+        strWindowinfo["mode"] = cloudICP.config["mode"];
+    }
     if (param["windowInfo"] != undefined) {
-        if (!cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647) {
-            result["desc"] = "acceptVideoConf: The width is invalid";
-            param["callback"](result);
-            return;
-        }
-
-        if (!cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["width"] > 2147483647) {
-            result["desc"] = "acceptVideoConf: The height is invalid";
-            param["callback"](result);
-            return;
-        }
-
         if (!cloudICP.util.isNumber(param["windowInfo"]["posX"]) || param["windowInfo"]["width"] > 2147483647) {
             result["desc"] = "acceptVideoConf: The posX is invalid";
             param["callback"](result);
@@ -1022,9 +1145,55 @@ ICPSDK_Dispatch_Conf.prototype.acceptVideoConf = function(param) {
             param["callback"](result);
             return;
         }
+        if ("wssflow" == strWindowinfo["mode"]) {//推流模式
+            if (undefined == param["windowInfo"]["width"] || !cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647 || param["windowInfo"]["width"] < 0) {
+                result["desc"] = "acceptVideoConf: The width is invalid.";
+                param["callback"](result);
+                return;
+            }
 
-        var callStatusMgr = cloudICP.util.callStatusMgr;
-        callStatusMgr.windowInfos[param["cid"]] = param["windowInfo"];
+            if (undefined == param["windowInfo"]["height"] || !cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["height"] > 2147483647 || param["windowInfo"]["height"] < 0) {
+                result["desc"] = "acceptVideoConf: The height is invalid.";
+                param["callback"](result);
+                return;
+            }
+        } else if ("window" == strWindowinfo["mode"]) {//弹窗模式
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posX"])) {
+                result["desc"] += "acceptVideoConf: The posX is invalid, use defult value 400; ";
+                strWindowinfo["posX"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posY"])) {
+                result["desc"] += "acceptVideoConf: The posY is invalid, use defult value 400; ";
+                strWindowinfo["posY"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["width"])) {
+                result["desc"] += "acceptVideoConf: The width is invalid, use defult value 640; ";
+                strWindowinfo["width"] = 640;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["height"])) {
+                result["desc"] += "acceptVideoConf: The height is invalid, use defult value 480; ";
+                strWindowinfo["height"] = 480;
+            }
+            if (undefined == param["windowInfo"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["windowInfo"]["showToolbar"])) {
+                result["desc"] += "acceptVideoConf: The showToolbar is invalid, use defult value 1; ";
+                strWindowinfo["showToolbar"] = 1;
+            }
+            if (undefined == param["windowInfo"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["windowInfo"]["buttonIDs"])) {
+                result["desc"] += "acceptVideoConf: The buttonIDs is invalid, use defult value 0; ";
+                strWindowinfo["buttonIDs"] = 0;
+            }
+        } else {
+            result["desc"] = "acceptVideoConf: The mode is invalid.";
+            param["callback"](result);
+            return;
+        }
+        strWindowinfo["iCid"] = param["cid"];
+    } else {
+        strWindowinfo["showToolbar"] = 1;
+        strWindowinfo["buttonIDs"] = 0;
+        strWindowinfo["iCid"] = param["cid"];
+        strWindowinfo["width"] = 1280;
+        strWindowinfo["height"] = 720;
     }
 
     var calls =  cloudICP.util.callStatusMgr.allCalls;
@@ -1035,7 +1204,8 @@ ICPSDK_Dispatch_Conf.prototype.acceptVideoConf = function(param) {
         return;
     }
 
-    var callStatusMgr =  cloudICP.util.callStatusMgr;
+    var callStatusMgr = cloudICP.util.callStatusMgr;
+    callStatusMgr.windowInfos[param["cid"]] = strWindowinfo;
     if (callStatusMgr.currentGoingConf != 0) {
         result["rsp"] = "-5";
         result["desc"] = "acceptVideoConf: The number of conf is limited to " + this.MAX_CONF_NUM;
@@ -3665,6 +3835,67 @@ ICPSDK_Dispatch_Conf.prototype.applyFloor = function(param) {
     
     cloudICP.util.ajax(ajaxCfg);
 };
+
+/**
+ * setChairman 切换会议主席
+ * @param {
+    *  confId: ,
+    *  applier: ,
+    * }
+*/
+ICPSDK_Dispatch_Conf.prototype.setChairman = function (param) {
+    if (undefined == param) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "setChairman: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "setChairman: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    if (!cloudICP.userInfo["isdn"]) {
+        result["desc"] = "setChairman: The user does not logined";
+        param["callback"](result);
+        return;
+    }
+    //check param valid
+    result["rsp"] = "-2";
+
+    if (!cloudICP.util.checkConfId(param["confId"])) {
+        result["desc"] = "applyFloor: confId is invalid";
+        param["callback"](result);
+        return;
+    }
+
+    if (!cloudICP.util.checkIsdn(param["applier"])) {
+        result["desc"] = "applyFloor: applier is invalid";
+        param["callback"](result);
+        return;
+    }
+
+    var requestParam = {
+        "opt": "setChairman",
+        "param": param
+    };
+
+    var url = cloudICP.getSdkServerUrl() + "/v1/phoneconf/" + cloudICP.userInfo["isdn"];
+    var ajaxCfg = {
+        "type": "POST",
+        "url": url,
+        "data": requestParam,
+        "callback": function (data) {
+            param["callback"](data);
+        }
+    }
+
+    cloudICP.util.ajax(ajaxCfg);
+};
 function ICPSDK_Dispatch_Device() {
     this.isDTMFDone = true;
 };
@@ -4366,6 +4597,200 @@ ICPSDK_Dispatch_Device.prototype.forceInitMSP = function(param) {
     param["callback"]({"rsp": "0", "desc": ""});
 };
 
+
+/**
+ * hideVideoWindow
+ * @param {Object} param {
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Device.prototype.hideVideoWindow = function (param) {
+    if (undefined == param) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "hideVideoWindow: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "hideVideoWindow: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    if (!cloudICP.userInfo["isdn"]) {
+        result["desc"] = "The user does not logined";
+        param["callback"](result);
+        return;
+    }
+
+    result["rsp"] = "-2";
+    if (param["cid"] != "-1") {
+        if (!cloudICP.util.checkCid(param["cid"])) {
+            result["desc"] = "hideVideoWindow: The cid is invalid";
+            param["callback"](result);
+            return;
+        };
+    }
+
+
+    var meidaSDKparam = "{\"description\":\"hide_video_window\", \"cmd\": 196616, \"param\":{\"cid\": {0}}}".format(
+        parseInt(param["cid"])
+    );
+
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+
+    param["callback"]({ "rsp": "0", "desc": "" });
+};
+
+
+/**
+ * windowOnTop
+ * @param {Object} param {
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Device.prototype.windowOnTop = function (param) {
+    if (undefined == param) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "windowOnTop: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "windowOnTop: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    if (!cloudICP.userInfo["isdn"]) {
+        result["desc"] = "The user does not logined";
+        param["callback"](result);
+        return;
+    }
+
+    result["rsp"] = "-2";
+    if (param["cid"] != "-1") {
+        if (!cloudICP.util.checkCid(param["cid"])) {
+            result["desc"] = "windowOnTop: The cid is invalid";
+            param["callback"](result);
+            return;
+        };
+    }
+
+
+    var meidaSDKparam = "{\"description\":\"msp_window_top\", \"cmd\": 196614, \"param\":{\"cid\": {0}, \"isOnTop\":  {1}}}".format(
+        parseInt(param["cid"]), param["isOnTop"]
+    );
+
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+
+    param["callback"]({ "rsp": "0", "desc": "" });
+};
+
+
+/**
+ * windowDragEnable
+ * @param {Object} param {
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Device.prototype.windowDragEnable = function (param) {
+    if (undefined == param) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "windowDragEnable: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "windowDragEnable: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    if (!cloudICP.userInfo["isdn"]) {
+        result["desc"] = "The user does not logined";
+        param["callback"](result);
+        return;
+    }
+
+    result["rsp"] = "-2";
+    if (param["cid"] != "-1") {
+        if (!cloudICP.util.checkCid(param["cid"])) {
+            result["desc"] = "windowDragEnable: The cid is invalid";
+            param["callback"](result);
+            return;
+        };
+    }
+
+    var meidaSDKparam = "{\"description\":\"msp_window_set_enable_drag\", \"cmd\": 196615, \"param\":{\"cid\": {0}, \"isDrag\":  {1}}}".format(
+        parseInt(param["cid"]), param["isDrag"]
+    );
+
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+
+    param["callback"]({ "rsp": "0", "desc": "" });
+};
+
+
+/**
+ * showWindowBorder
+ * @param {Object} param {
+ *  resID: ,
+ *  border: ,
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Device.prototype.showWindowBorder = function (param) {
+    if (undefined == param) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "getResolution: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "getResolution: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    if (!cloudICP.userInfo["isdn"]) {
+        result["desc"] = "initMRS: The user does not logined";
+        param["callback"](result);
+        return;
+    }
+
+    if (!param["resID"] && !param["cid"] ) {
+        result["desc"] = "monitorVideo: The resID is invalid";
+        param["callback"](result);
+        return;
+    }
+
+    result["rsp"] = "-2";
+
+    var meidaSDKparam = {
+        "description": "show_window_border",
+        "cmd": 196617,
+        "param": param
+    }
+
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+
+    param["callback"]({ "rsp": "0", "desc": "" });
+};
+
+
 /**
  * setWindowInfo
  * @param {Object} param {
@@ -4450,7 +4875,12 @@ ICPSDK_Dispatch_Device.prototype.setWindowInfo = function(param) {
         }
 
         var callStatusMgr = cloudICP.util.callStatusMgr;
-        callStatusMgr.windowInfos[param["cid"]] = param["windowInfo"];
+        if (undefined != callStatusMgr.windowInfos[param["cid"]]) {
+            callStatusMgr.windowInfos[param["cid"]]["width"] = param["windowInfo"]["width"];
+            callStatusMgr.windowInfos[param["cid"]]["height"] = param["windowInfo"]["height"];
+            callStatusMgr.windowInfos[param["cid"]]["posX"] = param["windowInfo"]["posX"];
+            callStatusMgr.windowInfos[param["cid"]]["posY"] = param["windowInfo"]["posY"];
+        }
         var windowInfo = param["windowInfo"];
     }
 
@@ -4599,7 +5029,7 @@ ICPSDK_Dispatch_Device.prototype.RecordStart  = function(param) {
         param["MaxSize"]=""
     }
 
-    // 截图
+    // 开始录像
     var meidaSDKparam = "{\"description\":\"msp_RecordStart\", \"cmd\": 65553, \"param\":{\"cid\": {0}, \"Type\": \"{1}\", \"RecFile\":\"{2}\",  \"MaxSize\":\"{3}\"}}".format(
         parseInt(param["cid"]), param["Type"], param["RecFile"], param["MaxSize"]
     );
@@ -4660,19 +5090,146 @@ ICPSDK_Dispatch_Device.prototype.RecordStop  = function(param) {
 
 
 /**
- * windowOnTop
+ * playAudioShortMsg
  * @param {Object} param {
  *  callback: ,
  * }
  */
-ICPSDK_Dispatch_Device.prototype.windowOnTop = function(param) {
+ICPSDK_Dispatch_Device.prototype.playAudioShortMsg = function (param) {
     if (undefined == param) {
-        cloudICP.util.log({ "logLevel": "error", "logMsg": "windowOnTop: param is invalid" });
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "playAudioShortMsg: param is invalid" });
         return;
     }
 
     if (undefined == param["callback"] || typeof param["callback"] != "function") {
-        cloudICP.util.log({ "logLevel": "error", "logMsg": "windowOnTop: callback is not a function" });
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "playAudioShortMsg: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    result["rsp"] = "-2";
+    if (!param["audioMsg"]) {
+        result["desc"] = "The audioMsg is invalid";
+        param["callback"](result);
+        return;
+    }
+
+    var meidaSDKparam = "{\"description\":\"msp_play_audio_shortMsg\", \"cmd\": 131081, \"param\":{\"audioMsg\": \"{0}\"}}".format(
+        param["audioMsg"]
+    );
+
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+
+    param["callback"]({ "rsp": "0", "desc": "" });
+};
+
+
+/**
+ * createWindow 创建用户视频窗口
+ * @param {Object} param {
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Device.prototype.createWindow = function (param) {
+    if (undefined == param || undefined == param["windowInfo"]) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "createWindow: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "createWindow: callback is not a function" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    if (!cloudICP.userInfo["isdn"]) {
+        result["desc"] += "The user does not logined";
+        param["callback"](result);
+        return;
+    }
+
+    if (undefined == param["windowInfo"]["width"] || !cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647) {
+        result["desc"] += "createWindow: The width is invalid, use defult value 400; ";
+        param["windowInfo"]["width"] = 400;
+    }
+    if (undefined == param["windowInfo"]["height"] || !cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["height"] > 2147483647) {
+        result["desc"] += "createWindow: The height is invalid, use defult value 225; ";
+        param["windowInfo"]["height"] = 225;
+    }
+    if (undefined == param["windowInfo"]["posX"] || !cloudICP.util.isNumber(param["windowInfo"]["posX"]) || param["windowInfo"]["posX"] > 2147483647) {
+        result["desc"] += "createWindow: The posX is invalid, use defult value 400; ";
+        param["windowInfo"]["posX"] = 400;
+    }
+    if (undefined == param["windowInfo"]["posY"] || !cloudICP.util.isNumber(param["windowInfo"]["posY"]) || param["windowInfo"]["posY"] > 2147483647) {
+        result["desc"] += "createWindow: The posY is invalid, use defult value 400; ";
+        param["windowInfo"]["posY"] = 400;
+    }
+    if (undefined == param["windowInfo"]["showToolbar"] || !cloudICP.util.isNumber(param["windowInfo"]["showToolbar"]) || param["windowInfo"]["showToolbar"] > 255) {
+        result["desc"] += "createWindow: The showToolbar is invalid, use defult value 1; ";
+        param["windowInfo"]["showToolbar"] = 1;
+    }
+    if (undefined == param["windowInfo"]["buttonIDs"] || !cloudICP.util.isNumber(param["windowInfo"]["buttonIDs"]) || param["windowInfo"]["buttonIDs"] > 255) {
+        result["desc"] += "createWindow: The buttonIDs is invalid, use defult value 0; ";
+        param["windowInfo"]["buttonIDs"] = 0;
+    }
+    if (undefined == param["windowInfo"]["hide"]) {
+        result["desc"] += "createWindow: The hide is invalid, use defult value false; ";
+        param["windowInfo"]["hide"] = false;
+    }
+    if (undefined == param["windowInfo"]["enableDrag"]) {
+        result["desc"] += "createWindow: The enableDrag is invalid, use defult value true; ";
+        param["windowInfo"]["enableDrag"] = true;
+    }
+
+    result["rsp"] = "-2";
+    var userWindowId = cloudICP.util.getUserWindowId();
+    var userWindowName = "";
+    if (!param["windowInfo"]["windowName"]) {
+        userWindowName = userWindowId.toString();
+    }
+    var iResult = cloudICP.util.checkUserWindowId(userWindowId,"create");
+    if (0 == iResult) {
+        result["desc"] = "createWindow: The userWindowId is invalid";
+        param["callback"](result);
+        return;
+    } else if (2 == iResult) {
+        result["desc"] = "createWindow: The userWindowId is used, created user window.";
+        param["callback"](result);
+        return;
+    }
+
+    var meidaSDKparam = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"userWindowId\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"showToolbar\": {7}, \"buttonIDs\": {8}, \"hide\":{9}, \"enableDrag\":{10} }}".format(
+        userWindowId, userWindowName, "window", param["windowInfo"]["width"], param["windowInfo"]["height"], param["windowInfo"]["posX"], param["windowInfo"]["posY"],
+        param["windowInfo"]["showToolbar"], param["windowInfo"]["buttonIDs"], param["windowInfo"]["hide"], param["windowInfo"]["enableDrag"]
+    )
+    result["rsp"] = 0;
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+    param["callback"](result);
+};
+
+
+/**
+ * destroyWindow 释放用户创建的视频窗口
+ * @param {Object} param {
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Device.prototype.destroyWindow = function (param) {
+    if (undefined == param && undefined == param["userWindowId"] ) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "destroyWindow: param is invalid" });
+        return;
+    }
+
+    if (undefined == param["callback"] || typeof param["callback"] != "function") {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "destroyWindow: callback is not a function" });
         return;
     }
 
@@ -4688,22 +5245,70 @@ ICPSDK_Dispatch_Device.prototype.windowOnTop = function(param) {
     }
 
     result["rsp"] = "-2";
-    if(param["cid"] != "-1"){
-        if (!cloudICP.util.checkCid(param["cid"])) {
-            result["desc"] = "windowOnTop: The cid is invalid";
-            param["callback"](result);
-            return;
-        };
+    var iResult = cloudICP.util.checkUserWindowId(param["userWindowId"], "destroy");
+    if (0 == iResult) {
+        result["desc"] = "destroyWindow: The userWindowId is invalid";
+        param["callback"](result);
+        return;
     }
-
-
-    var meidaSDKparam = "{\"description\":\"msp_window_top\", \"cmd\": 196614, \"param\":{\"cid\": {0}, \"isOnTop\":  {1}}}".format(
-        parseInt(param["cid"]), param["isOnTop"]
-    );
-
-    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
-
-    param["callback"]({"rsp": "0", "desc": ""});
+    var resID = undefined;
+    Object.keys(cloudICP.util.callStatusMgr.videoMediaInfoBuf).forEach(function (key) {
+        if (undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"]["userWindowId"] && cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"]["userWindowId"] == param["userWindowId"]) {
+            cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"]["isNeedDestroyWindow"] = true;
+            resID = key;
+        }
+    });
+    if (resID == undefined) {//用户窗口还没有建立媒体面
+        if (undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["userWindowId"].toString()]) {
+            if (undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["userWindowId"].toString()]["value"]["cid"]) {
+                var cid = cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["userWindowId"].toString()]["value"]["cid"];
+                if (undefined != cloudICP.util.callStatusMgr.windowInfos[cid.toString()]) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[cid.toString()];
+                }
+            }
+            if (undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["userWindowId"].toString()]["value"]["to"]) {
+                var to = cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["userWindowId"].toString()]["value"]["to"];
+                if (undefined != cloudICP.util.callStatusMgr.windowInfos[to.toString()]) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[to.toString()];
+                }
+            }
+        }
+        var meidaSDKparam = "{\"description\":\"msp_delete_close_userWindow\", \"cmd\": 196613, \"param\":{\"userWindowId\":{0}}}".format(
+            parseInt(param["userWindowId"])
+        );
+        cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+        param["callback"]({ "rsp": "0", "desc": "" });
+        return;
+    };
+    //关闭窗口上的业务
+    var callStatusMgr = cloudICP.util.callStatusMgr;
+    var call = callStatusMgr.allCalls[resID];
+    if (call) {
+        var param = {
+            cid: resID,
+            callback: function (data) {
+                setTimeout(function () {
+                    cloudICP.util.sendLogOut("close [" + resID + "] window rsp: " + data);
+                }, 0);
+            }
+        }
+        if (call.callType == callStatusMgr.VIDEO || call.callType == callStatusMgr.MONITOR || call.callType == callStatusMgr.VIDEODISPATCH) {
+            cloudICP.dispatch.video.release(param);
+            return;
+        }
+        if (call.callType == callStatusMgr.VIDEOCONF) {
+            var confInfo = cloudICP.util.callStatusMgr.confMgr[cloudICP.util.callStatusMgr.currentGoingConf];
+            if (confInfo != undefined) {
+                if (cloudICP.userInfo["isdn"] == confInfo["value"]["confStatus"]["chair"]) {
+                    param.confId = cloudICP.util.callStatusMgr.currentGoingConf;
+                    cloudICP.dispatch.conf.endConf(param);
+                    return;
+                }
+            }
+            cloudICP.dispatch.conf.exitVideoConf(param);
+        }
+    }
+    param["callback"]({ "rsp": "0", "desc": "" });
 };
 
 function ICPSDK_Dispatch_Event() {
@@ -4820,7 +5425,9 @@ function ICPSDK_Dispatch_Event() {
             "OnConnection": this.printEvent,
             "OnDispatchKickOutNotifyEvent": this.printEvent,
             "OnModifyPasswordNotify": this.printEvent,
-            "OnDeleteAccountNotify": this.printEvent
+            "OnDeleteAccountNotify": this.printEvent,
+            "OnSetLinkedPhoneSuccess": this.printEvent,
+            "OnSetLinkedPhoneFailure": this.printEvent
         },
         "PhoneConfNotify": {
             "OnCreateConfSuccess": this.printEvent,
@@ -4884,6 +5491,8 @@ function ICPSDK_Dispatch_Event() {
             "OnConfProxyFloorFailure": this.printEvent,
             "OnQueryContinuousPresenceInfoResult": this.printEvent,
             "OnApplyFloor": this.printEvent,
+            "OnConfSetChairmanSuccess": this.printEvent,
+            "OnConfSetChairmanFailure": this.printEvent,
         },
         "MSPNotify": {
             "OnGetSoundDeviceResult": this.printEvent,
@@ -4898,7 +5507,14 @@ function ICPSDK_Dispatch_Event() {
             "OnSendToDTMFResult":this.printEvent,
             "OnVDMStatusNotify": this.printEvent,
             "OnGetResolutionResult": this.printEvent,
+            "OnHideVideoWindowResult": this.printEvent,
             "OnWindowOnTopResult": this.printEvent,
+            "OnWindowDragEnableResult": this.printEvent,
+            "OnWindowShowBorderResult": this.printEvent,
+            "OnWindowOperateNotify": this.printEvent,
+            "OnUpdateMsp": this.printEvent,
+            "OnCreateWindowResult": this.printEvent,
+            "OnDestroyWindowResult": this.printEvent,
         }
     };
 };
@@ -5521,6 +6137,22 @@ ICPSDK_Dispatch_Event.prototype.delModuleNotify = function(event) {
                     }
                     this.EVENT_LIST["GroupCallNotify"]["OnSetListenGroupFailure"](retEvent);
                 }
+            } else if (event["param"]["type"]== "31") {
+                if (event["param"]["ret"] == "0") {
+                    var retEvent = {
+                        "eventName": "OnSetLinkedPhoneSuccess",
+                        "rsp": "0"
+                        
+                    }
+                    this.EVENT_LIST["ModuleNotify"]["OnSetLinkedPhoneSuccess"](retEvent);
+
+                } else {
+                    var retEvent = {
+                        "eventName": "OnSetLinkedPhoneFailure",
+                        "rsp": event["param"]["ret"]
+                    }
+                    this.EVENT_LIST["ModuleNotify"]["OnSetLinkedPhoneFailure"](retEvent);
+                }
             }
         }
     }
@@ -5585,6 +6217,10 @@ ICPSDK_Dispatch_Event.prototype.delMsNotify = function(event) {
             }
 
             event["eventName"] = "OnRecvDispSMSNotify";
+            if (undefined != event["value"]["audiocontent"]) {
+                event["value"]["audiocontent"] = event["value"]["audiocontent"].replace(/-/g, "+");
+                event["value"]["audiocontent"] = event["value"]["audiocontent"].replace(/_/g, "/");
+            }
             this.EVENT_LIST["MsNotify"]["OnRecvDispSMSNotify"](event);
         } else if (opt == "sendresult") {
             //发送短信
@@ -5720,7 +6356,10 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
     }
 
     var confInfo = value["confInfo"];
-    if(undefined != confInfo) {
+    if (undefined != confInfo) {
+        if (!!confInfo["confInternalId"]) {
+            value["confId"] = confInfo["confInternalId"];
+        }
         delete value.confInfo;
     }
 
@@ -5741,6 +6380,9 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
         switch(rsp) {
             case "3004":
                 var callStatusMgr = cloudICP.util.callStatusMgr;
+                if (!!callStatusMgr.windowInfos[value["callee"]]) {//视频点呼、视频监控、主动入会
+                    callStatusMgr.windowInfos[value["callee"]]["cid"] = event["value"]["cid"];
+                }
                 if (confInfo != undefined) {
                     callStatusMgr.updateCallStatus(callStatusMgr.VIDEOCONF, callStatusMgr.NEW, event, confInfo);
                     break;
@@ -5861,105 +6503,151 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
 
                 // 建立视频媒体通道
                 if (value["local_video"] != "0.0.0.0,0" && value["server_video"] != "0.0.0.0,0") {
-                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["value"]["cid"]] = event;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]] = event;
 
-                    var windowInfo = cloudICP.util.callStatusMgr.windowInfos[event["value"]["cid"]];
-                    var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[event["value"]["callee"]];
-                    var ibuttonIDs = 0;
+                    var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                    var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                    var iuserWindowId = 0;
                     var ishowToolbar = 1;
-                    if ((windowToolbarInfo != undefined) && (null != windowToolbarInfo)) {
-                        if ((undefined != windowToolbarInfo["showToolbar"]) && (null != windowToolbarInfo["showToolbar"])) {
-                            ishowToolbar = windowToolbarInfo["showToolbar"];
+                    var ibuttonIDs = 0;
+                    var bHide = false;
+                    var bEnableDrag = true;
+                    var iWidth = 640;
+                    var iHeight = 480;
+                    var iPosX = 400;
+                    var iPosY = 400;
+                    var fmtType = "TIN";
+                    var windowMode = cloudICP.config["mode"];
+                    var videoConfLocalWindow = null;
+
+                    if ((undefined != value["confId"]) && (undefined != cloudICP.config["videoConfLocalWindow"])) {//会议业务
+                        videoConfLocalWindow = cloudICP.config["videoConfLocalWindow"];
+                    }
+                    if (!!windowToolbarInfo) {
+                        if (undefined != windowToolbarInfo["userWindowId"]) {
+                            iuserWindowId = parseInt(windowToolbarInfo["userWindowId"]);
+                            cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["userWindowId"] = iuserWindowId;
                         }
-                        if ((undefined != windowToolbarInfo["buttonIDs"]) && (null != windowToolbarInfo["buttonIDs"])) {
-                            ibuttonIDs = windowToolbarInfo["buttonIDs"];
+                        if (undefined != windowToolbarInfo["showToolbar"]) {
+                            ishowToolbar = parseInt(windowToolbarInfo["showToolbar"]);
+                        }
+                        if (undefined != windowToolbarInfo["buttonIDs"]) {
+                            ibuttonIDs = parseInt(windowToolbarInfo["buttonIDs"]);
+                        }
+                        if (undefined != windowToolbarInfo["hide"]) {
+                            bHide = Boolean(windowToolbarInfo["hide"]);
+                        }
+                        if (undefined != windowToolbarInfo["enableDrag"]) {
+                            bEnableDrag = Boolean(windowToolbarInfo["enableDrag"]);
+                        }
+                        if (undefined != windowToolbarInfo["mode"]) {
+                            windowMode = windowToolbarInfo["mode"].toString();
+                        }
+                        if (undefined != windowToolbarInfo["fmtType"]) {
+                            fmtType = windowToolbarInfo["fmtType"].toString();
+                        }
+                        if (undefined != windowToolbarInfo["width"]) {
+                            iWidth = parseInt(windowToolbarInfo["width"]);
+                        }
+                        if (undefined != windowToolbarInfo["height"]) {
+                            iHeight = parseInt(windowToolbarInfo["height"]);
+                        }
+                        if (undefined != windowToolbarInfo["posX"]) {
+                            iPosX = parseInt(windowToolbarInfo["posX"]);
+                        }
+                        if (undefined != windowToolbarInfo["posY"]) {
+                            iPosY = parseInt(windowToolbarInfo["posY"]);
+                        }
+                    }
+                    if ((!!windowInfo) && (!!windowInfo["iCid"])) {
+                        if (undefined != windowInfo["userWindowId"]) {
+                            iuserWindowId = parseInt(windowInfo["userWindowId"]);
+                            cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["userWindowId"] = iuserWindowId;
+                        }
+                        if (undefined != windowInfo["showToolbar"]) {
+                            ishowToolbar = parseInt(windowInfo["showToolbar"]);
+                        }
+                        if (undefined != windowInfo["buttonIDs"]) {
+                            ibuttonIDs = parseInt(windowInfo["buttonIDs"]);
+                        }
+                        if (undefined != windowInfo["mode"]) {
+                            windowMode = windowInfo["mode"].toString();
+                        }
+                        if (undefined != windowInfo["fmtType"]) {
+                            fmtType = windowInfo["fmtType"].toString();
+                        }
+                        if (undefined != windowInfo["width"]) {
+                            iWidth = parseInt(windowInfo["width"]);
+                        }
+                        if (undefined != windowInfo["height"]) {
+                            iHeight = parseInt(windowInfo["height"]);
+                        }
+                        if (undefined != windowInfo["posX"]) {
+                            iPosX = parseInt(windowInfo["posX"]);
+                        }
+                        if (undefined != windowInfo["posY"]) {
+                            iPosY = parseInt(windowInfo["posY"]);
+                        }
+                        if (undefined != windowInfo["hide"]) {
+                            bHide = Boolean(windowInfo["hide"]);
+                        }
+                        if (undefined != windowInfo["enableDrag"]) {
+                            bEnableDrag = Boolean(windowInfo["enableDrag"]);
                         }
                     }
 
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["hide"] = bHide;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["enableDrag"] = bEnableDrag;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["showToolbar"] = ishowToolbar;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["buttonIDs"] = ibuttonIDs;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["width"] = iWidth;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["height"] = iHeight;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["posX"] = iPosX;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["posY"] = iPosY;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["winMode"] = windowMode;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["fmtType"] = fmtType;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["direction"] = "out";
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["rsp"] = event["rsp"];
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["videoConfLocalWindow"] = videoConfLocalWindow;
 
-                    if ((windowInfo != undefined) && (undefined != windowInfo["iCid"])) {
-                        if ((undefined != windowInfo["showToolbar"]) && (null != windowInfo["showToolbar"])) {
-                            ishowToolbar = windowInfo["showToolbar"];
-                        }
-                        if ((undefined != windowInfo["buttonIDs"]) && (null != windowInfo["buttonIDs"])) {
-                            ibuttonIDs = windowInfo["buttonIDs"];
-                        }
-                        var param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"width\": {2}, \"height\": {3}, \"x\": {4}, \"y\": {5}, \"mode\": \"{6}\", \"showToolbar\": {7}, \"buttonIDs\": {8}}}".format(
-                            parseInt(value["cid"]), parseInt(value["cid"]), parseInt(windowInfo["width"]), parseInt(windowInfo["height"]), parseInt(windowInfo["posX"]), parseInt(windowInfo["posY"]), cloudICP.config.mode, ishowToolbar, ibuttonIDs
-                        )
+                    if (0 != iuserWindowId) {
+                        param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"hide\": {7}, \"enableDrag\":{8}, \"scrollX\": {9}, \"scrollY\":{10}, \"showToolbar\": {11}, \"buttonIDs\": {12}, \"userWindowId\": {13} }}".format(
+                            parseInt(value["cid"]), parseInt(value["cid"]), windowMode, iWidth, iHeight, iPosX, iPosY, bHide, bEnableDrag, 0, 0, ishowToolbar, ibuttonIDs, iuserWindowId
+                        );
                     } else {
-                        var param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"xFix\": {7}, \"yFix\":{8}, \"scrollX\": {9}, \"scrollY\":{10}, \"showToolbar\": {11}, \"buttonIDs\": {12} }}".format(
-                            parseInt(value["cid"]), parseInt(value["cid"]), cloudICP.config.mode, 500, 400, 0, 0, 0, 0, 0, 0, ishowToolbar, ibuttonIDs
-                        )
+                        param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"hide\": {7}, \"enableDrag\":{8}, \"scrollX\": {9}, \"scrollY\":{10}, \"showToolbar\": {11}, \"buttonIDs\": {12} }}".format(
+                            parseInt(value["cid"]), parseInt(value["cid"]), windowMode, iWidth, iHeight, iPosX, iPosY, bHide, bEnableDrag, 0, 0, ishowToolbar, ibuttonIDs
+                        );
                     }
 
-                    //cloudICP.dispatch.webSocket.sendDataToDeamonSDK(param, true);
                     cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true); //modify_by_caohui
                 }
 
                 var callStatusMgr = cloudICP.util.callStatusMgr;
-                var call =  callStatusMgr.allCalls[event["value"]["cid"]];
+                var call =  callStatusMgr.allCalls[value["cid"]];
                 if (call && call.callType == callStatusMgr.MONITOR) {
                     callStatusMgr.updateCallStatus(callStatusMgr.MONITOR, callStatusMgr.CONNECTING, event);
-
-                    newEvent["value"]["calltype"] = "monitor";
-                    newEvent["value"]["src"] = "";
-                    newEvent["value"]["direction"] = "out";
-                    newEvent["value"]["ptz"] = event["value"]["ptz"];
-                    newEvent["value"]["mute"] = event["value"]["mute"];
-                    newEvent["eventName"] = "OnCallConnect";
-                    this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
-                    break;
+                    break;//暂时不通知上层，等创建窗口成功后通知
                 } else if (call && call.callType == callStatusMgr.VIDEOCONF) {
                     callStatusMgr.updateCallStatus(callStatusMgr.VIDEOCONF, callStatusMgr.CONNECTING, event);
-
-                    callStatusMgr.holdCall(event["value"]["cid"]);
-
-                    newEvent["value"]["confId"] = call["confId"];
-                    newEvent["value"]["isVideo"] = "true";
-                    newEvent["eventName"] = "OnConfConnect";
-                    this.EVENT_LIST["PhoneConfNotify"]["OnConfConnect"](newEvent);
-
-                    var ajaxCfg = {
-                        "type": "POST",
-                        "url": cloudICP.getSdkServerUrl() + "/v1/phoneconf/" + cloudICP.userInfo["isdn"],
-                        "data": {
-                            "opt": "sub",
-                            "confId": call["confId"]
-                        },
-                        "callback": function(data) {
-                            if (data["rsp"] != "0") {
-                                var retEvent = {
-                                    "eventName": "OnSubscribeConfFailure",
-                                    "rsp": data["rsp"],
-                                }
-            
-                                cloudICP.dispatch.event.EVENT_LIST["PhoneConfNotify"]["OnSubscribeConfFailure"](retEvent);
-                            } else {
-                                cloudICP.util.callStatusMgr.confSubMgr[call["confId"]] = true;
-                            }
-                        }
-                    }
-                    cloudICP.util.ajax(ajaxCfg);
-                    break;
+                    callStatusMgr.holdCall(value["cid"]);
+                    break;//暂时不通知上层，等创建窗口成功后通知
                 }
 
                 var callStatusMgr = cloudICP.util.callStatusMgr;
                 callStatusMgr.updateCallStatus(callStatusMgr.VIDEO, callStatusMgr.CONNECTING, event);
-
                 callStatusMgr.holdCall(event["value"]["cid"]);
-
-                newEvent["value"]["calltype"] = "video";
-                newEvent["value"]["src"] = "";
-                newEvent["value"]["direction"] = "out";
-                newEvent["value"]["ptz"] = event["value"]["ptz"];
-                newEvent["value"]["mute"] = event["value"]["mute"];
-                newEvent["eventName"] = "OnCallConnect";
-                this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
+                //暂时不通知上层，等创建窗口成功后通知
+                //newEvent["value"]["calltype"] = "video";
+                //newEvent["value"]["src"] = "";
+                //newEvent["value"]["direction"] = "out";
+                //newEvent["value"]["ptz"] = event["value"]["ptz"];
+                //newEvent["value"]["mute"] = event["value"]["mute"];
+                //newEvent["eventName"] = "OnCallConnect";
+                //this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
                 break;
             case "3008":
                 // 对端挂起事件
-                var value = event["value"];
 
                 //停止振铃
                 var param = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
@@ -5976,9 +6664,41 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
                 // 删除视频媒体通道
-                var param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
-                    parseInt(value["cid"])
-                )
+                var bIsNeedDestroyWindow = false;
+                var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                var videoMediaWorkingInfo = cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                var iuserWindowId = 0;
+                if (undefined != windowInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["cid"]];
+                }
+                if (undefined != windowToolbarInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["callee"]];
+                }
+                if (undefined != videoMediaWorkingInfo) {//该视频窗口有业务正在使用
+                    if (undefined != videoMediaWorkingInfo["value"]["userWindowId"]) {
+                        iuserWindowId = videoMediaWorkingInfo["value"]["userWindowId"];
+                    }
+                    if (undefined != videoMediaWorkingInfo["value"]["isNeedDestroyWindow"] && true == videoMediaWorkingInfo["value"]["isNeedDestroyWindow"]) {//用户需要释放该视频窗口
+                        bIsNeedDestroyWindow = true;
+                        delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[iuserWindowId.toString()];
+                    }
+                    delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                }
+                if (true == bIsNeedDestroyWindow) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"isNeedDestroyWindow\":{1}, \"userWindowId\":{2}}}".format(
+                        parseInt(value["cid"]), bIsNeedDestroyWindow, iuserWindowId
+                    );
+                } else if (0 != iuserWindowId) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"userWindowId\":{1}}}".format(
+                        parseInt(value["cid"]), iuserWindowId
+                    );
+                }
+                else {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
+                        parseInt(value["cid"])
+                    );
+                }
 
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -6048,7 +6768,6 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 break;
             case "3009":
                 // DC挂断事件
-                var value = event["value"];
 
                 //停止振铃
                 var param = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
@@ -6065,9 +6784,41 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
                 // 删除视频媒体通道
-                var param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
-                    parseInt(value["cid"])
-                )
+                var bIsNeedDestroyWindow = false;
+                var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                var videoMediaWorkingInfo = cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                var iuserWindowId = 0;
+                if (undefined != windowInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["cid"]];
+                }
+                if (undefined != windowToolbarInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["callee"]];
+                }
+                if (undefined != videoMediaWorkingInfo) {//该视频窗口有业务正在使用
+                    if (undefined != videoMediaWorkingInfo["value"]["userWindowId"]) {
+                        iuserWindowId = videoMediaWorkingInfo["value"]["userWindowId"];
+                    }
+                    if (undefined != videoMediaWorkingInfo["value"]["isNeedDestroyWindow"] && true == videoMediaWorkingInfo["value"]["isNeedDestroyWindow"]) {//用户需要释放该视频窗口
+                        bIsNeedDestroyWindow = true;
+                        delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[iuserWindowId.toString()];
+                    }
+                    delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                }
+                if (true == bIsNeedDestroyWindow) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"isNeedDestroyWindow\":{1}, \"userWindowId\":{2}}}".format(
+                        parseInt(value["cid"]), bIsNeedDestroyWindow, iuserWindowId
+                    );
+                } else if (0 != iuserWindowId) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"userWindowId\":{1}}}".format(
+                        parseInt(value["cid"]), iuserWindowId
+                    );
+                }
+                else {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
+                        parseInt(value["cid"])
+                    );
+                }
 
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -6150,6 +6901,16 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 var param = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
                     parseInt(value["cid"])
                 );
+                var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                if (undefined != windowInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["cid"]];
+                }
+                if (undefined != value["callee"]) {
+                    var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                    if (undefined != windowToolbarInfo) {
+                        delete cloudICP.util.callStatusMgr.windowInfos[value["callee"]];
+                    }
+                }
 
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -6317,103 +7078,153 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
 
                 // 建立视频媒体通道
                 if (value["local_video"] != "0.0.0.0,0" && value["server_video"] != "0.0.0.0,0") {
-                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["value"]["cid"]] = event;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]] = event;
 
-                    var windowInfo = cloudICP.util.callStatusMgr.windowInfos[event["value"]["cid"]];
-                    var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[event["value"]["callee"]];
-                    var ibuttonIDs = 0;
+                    var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                    var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                    var iuserWindowId = 0;
                     var ishowToolbar = 1;
-                    if ((windowToolbarInfo != undefined) && (null != windowToolbarInfo)) {
-                        if ((undefined != windowToolbarInfo["showToolbar"]) && (null != windowToolbarInfo["showToolbar"])) {
-                            ishowToolbar = windowToolbarInfo["showToolbar"];
+                    var ibuttonIDs = 0;
+                    var bHide = false;
+                    var bEnableDrag = true;
+                    var iWidth = 640;
+                    var iHeight = 480;
+                    var iPosX = 400;
+                    var iPosY = 400;
+                    var fmtType = "TIN";
+                    var windowMode = cloudICP.config["mode"];
+                    var videoConfLocalWindow = null;
+                    if ((undefined != value["confId"]) && (undefined != cloudICP.config["videoConfLocalWindow"])) {
+                        videoConfLocalWindow = cloudICP.config["videoConfLocalWindow"];
+                    }
+                    if (!!windowToolbarInfo) {
+                        if (undefined != windowToolbarInfo["userWindowId"]) {
+                            iuserWindowId = parseInt(windowToolbarInfo["userWindowId"]);
+                            cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["userWindowId"] = iuserWindowId;
+                            newEvent["value"]["userWindowId"] = iuserWindowId;
                         }
-                        if ((undefined != windowToolbarInfo["buttonIDs"]) && (null != windowToolbarInfo["buttonIDs"])) {
-                            ibuttonIDs = windowToolbarInfo["buttonIDs"];
+                        if (undefined != windowToolbarInfo["showToolbar"]) {
+                            ishowToolbar = parseInt(windowToolbarInfo["showToolbar"]);
+                        }
+                        if (undefined != windowToolbarInfo["buttonIDs"]) {
+                            ibuttonIDs = parseInt(windowToolbarInfo["buttonIDs"]);
+                        }
+                        if (undefined != windowToolbarInfo["mode"]) {
+                            windowMode = windowToolbarInfo["mode"].toString();
+                        }
+                        if (undefined != windowToolbarInfo["fmtType"]) {
+                            fmtType = windowToolbarInfo["fmtType"].toString();
+                        }
+                        if (undefined != windowToolbarInfo["width"]) {
+                            iWidth = parseInt(windowToolbarInfo["width"]);
+                        }
+                        if (undefined != windowToolbarInfo["height"]) {
+                            iHeight = parseInt(windowToolbarInfo["height"]);
+                        }
+                        if (undefined != windowToolbarInfo["posX"]) {
+                            iPosX = parseInt(windowToolbarInfo["posX"]);
+                        }
+                        if (undefined != windowToolbarInfo["posY"]) {
+                            iPosY = parseInt(windowToolbarInfo["posY"]);
+                        }
+                        if (undefined != windowToolbarInfo["hide"]) {
+                            bHide = Boolean(windowToolbarInfo["hide"]);
+                        }
+                        if (undefined != windowToolbarInfo["enableDrag"]) {
+                            bEnableDrag = Boolean(windowToolbarInfo["enableDrag"]);
+                        }
+                    }
+                    if ((!!windowInfo) && (!!windowInfo["iCid"])) {
+                        if (undefined != windowInfo["userWindowId"]) {
+                            iuserWindowId = parseInt(windowInfo["userWindowId"]);
+                            cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["userWindowId"] = iuserWindowId;
+                            newEvent["value"]["userWindowId"] = iuserWindowId;
+                        }
+                        if (undefined != windowInfo["showToolbar"]) {
+                            ishowToolbar = parseInt(windowInfo["showToolbar"]);
+                        }
+                        if (undefined != windowInfo["buttonIDs"]) {
+                            ibuttonIDs = parseInt(windowInfo["buttonIDs"]);
+                        }
+                        if (undefined != windowInfo["mode"]) {
+                            windowMode = windowInfo["mode"].toString();
+                        }
+                        if (undefined != windowInfo["fmtType"]) {
+                            fmtType = windowInfo["fmtType"].toString();
+                        }
+                        if (undefined != windowInfo["width"]) {
+                            iWidth = parseInt(windowInfo["width"]);
+                        }
+                        if (undefined != windowInfo["height"]) {
+                            iHeight = parseInt(windowInfo["height"]);
+                        }
+                        if (undefined != windowInfo["posX"]) {
+                            iPosX = parseInt(windowInfo["posX"]);
+                        }
+                        if (undefined != windowInfo["posY"]) {
+                            iPosY = parseInt(windowInfo["posY"]);
+                        }
+                        if (undefined != windowInfo["videoConfLocalWindow"]) {
+                            videoConfLocalWindow = windowInfo["videoConfLocalWindow"];
+                        }
+                        if (undefined != windowInfo["hide"]) {
+                            bHide = Boolean(windowInfo["hide"]);
+                        }
+                        if (undefined != windowInfo["enableDrag"]) {
+                            bEnableDrag = Boolean(windowInfo["enableDrag"]);
                         }
                     }
 
-                    if ((windowInfo != undefined) && (undefined != windowInfo["iCid"])) {
-                        if ((undefined != windowInfo["showToolbar"]) && (null != windowInfo["showToolbar"])) {
-                            ishowToolbar = windowInfo["showToolbar"];
-                        }
-                        if ((undefined != windowInfo["buttonIDs"]) && (null != windowInfo["buttonIDs"])) {
-                            ibuttonIDs = windowInfo["buttonIDs"];
-                        }
-                        var param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"width\": {2}, \"height\": {3}, \"x\": {4}, \"y\": {5}, \"mode\": \"{6}\", \"showToolbar\": {7}, \"buttonIDs\": {8}}}".format(
-                            parseInt(value["cid"]), parseInt(value["cid"]), parseInt(windowInfo["width"]), parseInt(windowInfo["height"]), parseInt(windowInfo["posX"]), parseInt(windowInfo["posY"]), cloudICP.config.mode, ishowToolbar, ibuttonIDs
-                        )
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["hide"] = bHide;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["enableDrag"] = bEnableDrag;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["showToolbar"] = ishowToolbar;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["buttonIDs"] = ibuttonIDs;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["width"] = iWidth;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["height"] = iHeight;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["posX"] = iPosX;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["posY"] = iPosY;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["winMode"] = windowMode;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["fmtType"] = fmtType;
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["direction"] = "in";
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["rsp"] = event["rsp"];
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]]["value"]["videoConfLocalWindow"] = videoConfLocalWindow;
+
+                    if (0 != iuserWindowId) {
+                        param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"hide\": {7}, \"enableDrag\":{8}, \"scrollX\": {9}, \"scrollY\":{10}, \"showToolbar\": {11}, \"buttonIDs\": {12}, \"userWindowId\": {13} }}".format(
+                            parseInt(value["cid"]), parseInt(value["cid"]), windowMode, iWidth, iHeight, iPosX, iPosY, bHide, bEnableDrag, 0, 0, ishowToolbar, ibuttonIDs, iuserWindowId
+                        );
                     } else {
-                        var param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"xFix\": {7}, \"yFix\":{8}, \"scrollX\": {9}, \"scrollY\":{10}, \"showToolbar\": {11}, \"buttonIDs\": {12} }}".format(
-                            parseInt(value["cid"]), parseInt(value["cid"]), cloudICP.config.mode, 500, 400, 0, 0, 0, 0, 0, 0, ishowToolbar, ibuttonIDs
-                        )
+                        param = "{\"description\":\"msp_create_video_window\", \"cmd\": 196610, \"param\":{\"resID\":{0}, \"windowName\": \"{1}\", \"mode\": \"{2}\", \"width\": {3}, \"height\": {4}, \"x\": {5}, \"y\":{6}, \"hide\": {7}, \"enableDrag\":{8}, \"scrollX\": {9}, \"scrollY\":{10}, \"showToolbar\": {11}, \"buttonIDs\": {12} }}".format(
+                            parseInt(value["cid"]), parseInt(value["cid"]), windowMode, iWidth, iHeight, iPosX, iPosY, bHide, bEnableDrag, 0, 0, ishowToolbar, ibuttonIDs
+                        );
                     }
-
-                    //cloudICP.dispatch.webSocket.sendDataToDeamonSDK(param, true);
                     cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);//modify_by_caohui
                 }
 
                 var callStatusMgr = cloudICP.util.callStatusMgr;
-                var call =  callStatusMgr.allCalls[event["value"]["cid"]];
+                var call =  callStatusMgr.allCalls[value["cid"]];
                 if (call && call.callType == callStatusMgr.VIDEOCONF) {
                     callStatusMgr.updateCallStatus(callStatusMgr.VIDEOCONF, callStatusMgr.CONNECTING, event);
-
-                    callStatusMgr.holdCall(event["value"]["cid"]);
-
-                    newEvent["value"]["confId"] = call["confId"];
-                    newEvent["value"]["isVideo"] = "true";
-                    newEvent["eventName"] = "OnConfConnect";
-                    this.EVENT_LIST["PhoneConfNotify"]["OnConfConnect"](newEvent);
-
-                    var ajaxCfg = {
-                        "type": "POST",
-                        "url": cloudICP.getSdkServerUrl() + "/v1/phoneconf/" + cloudICP.userInfo["isdn"],
-                        "data": {
-                            "opt": "sub",
-                            "confId": call["confId"]
-                        },
-                        "callback": function(data) {
-                            if (data["rsp"] != "0") {
-                                var retEvent = {
-                                    "eventName": "OnSubscribeConfFailure",
-                                    "rsp": data["rsp"],
-                                }
-            
-                                cloudICP.dispatch.event.EVENT_LIST["PhoneConfNotify"]["OnSubscribeConfFailure"](retEvent);
-                            } else {
-                                cloudICP.util.callStatusMgr.confSubMgr[call["confId"]] = true;
-                            }
-                        }
-                    }
-                    cloudICP.util.ajax(ajaxCfg);
-                    break;
+                    callStatusMgr.holdCall(value["cid"]);
+                    break;//暂时不通知上层，等创建窗口成功后通知
                 } else if (call && call.callType == callStatusMgr.VIDEODISPATCH) {
                     callStatusMgr.updateCallStatus(callStatusMgr.VIDEODISPATCH, callStatusMgr.CONNECTING, event);
-
-                    newEvent["value"]["calltype"] = "dispatch";
-                    newEvent["value"]["src"] = event["value"]["uri"];
-                    newEvent["value"]["direction"] = "in";
-                    newEvent["value"]["ptz"] = event["value"]["ptz"];
-                    newEvent["value"]["mute"] = event["value"]["mute"];
-                    newEvent["eventName"] = "OnCallConnect";
-                    this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
-                    break;
+                    break;//暂时不通知上层，等创建窗口成功后通知
                 }
 
                 callStatusMgr.updateCallStatus(callStatusMgr.VIDEO, callStatusMgr.CONNECTING, event);
+                callStatusMgr.holdCall(value["cid"]);
 
-                callStatusMgr.holdCall(event["value"]["cid"]);
-
-                newEvent["value"]["calltype"] = "video";
-                newEvent["value"]["src"] = "";
-                newEvent["value"]["direction"] = "in";
-                newEvent["value"]["ptz"] = event["value"]["ptz"];
-                newEvent["value"]["mute"] = event["value"]["mute"];
-                newEvent["eventName"] = "OnCallConnect";
-                this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
+                //newEvent["value"]["calltype"] = "video";
+                //newEvent["value"]["src"] = "";
+                //newEvent["value"]["direction"] = "in";
+                //newEvent["value"]["ptz"] = value["ptz"];
+                //newEvent["value"]["mute"] = value["mute"];
+                //newEvent["eventName"] = "OnCallConnect";
+                //this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
                 break;
             case "3009":
                 // DC挂断事件
-                var value = event["value"];
 
                 //停止振铃
                 var param = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
@@ -6430,9 +7241,41 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
                 // 删除视频媒体通道
-                var param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
-                    parseInt(value["cid"])
-                )
+                var bIsNeedDestroyWindow = false;
+                var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                var videoMediaWorkingInfo = cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                var iuserWindowId = 0;
+                if (undefined != windowInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["cid"]];
+                }
+                if (undefined != windowToolbarInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["callee"]];
+                }
+                if (undefined != videoMediaWorkingInfo) {//该视频窗口有业务正在使用
+                    if (undefined != videoMediaWorkingInfo["value"]["userWindowId"]) {
+                        iuserWindowId = videoMediaWorkingInfo["value"]["userWindowId"];
+                    }
+                    if (undefined != videoMediaWorkingInfo["value"]["isNeedDestroyWindow"] && true == videoMediaWorkingInfo["value"]["isNeedDestroyWindow"]) {//用户需要释放该视频窗口
+                        bIsNeedDestroyWindow = true;
+                        delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[iuserWindowId.toString()];
+                    }
+                    delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                }
+                if (true == bIsNeedDestroyWindow) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"isNeedDestroyWindow\":{1}, \"userWindowId\":{2}}}".format(
+                        parseInt(value["cid"]), bIsNeedDestroyWindow, iuserWindowId
+                    );
+                } else if (0 != iuserWindowId) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"userWindowId\":{1}}}".format(
+                        parseInt(value["cid"]), iuserWindowId
+                    );
+                }
+                else {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
+                        parseInt(value["cid"])
+                    );
+                }
 
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -6504,6 +7347,10 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 var param = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
                     parseInt(value["cid"])
                 );
+                var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                if (undefined != windowInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["cid"]];
+                }
 
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -6515,9 +7362,41 @@ ICPSDK_Dispatch_Event.prototype.delVideoNotify = function(event) {
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
                 // 删除视频媒体通道
-                var param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
-                    parseInt(value["cid"])
-                )
+                var bIsNeedDestroyWindow = false;
+                var windowInfo = cloudICP.util.callStatusMgr.windowInfos[value["cid"]];//视频点呼被动接听 、被动视频入会
+                var windowToolbarInfo = cloudICP.util.callStatusMgr.windowInfos[value["callee"]];//视频点呼、视频监控、主动入会
+                var videoMediaWorkingInfo = cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                var iuserWindowId = 0;
+                if (undefined != windowInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["cid"]];
+                }
+                if (undefined != windowToolbarInfo) {
+                    delete cloudICP.util.callStatusMgr.windowInfos[value["callee"]];
+                }
+                if (undefined != videoMediaWorkingInfo) {//该视频窗口有业务正在使用
+                    if (undefined != videoMediaWorkingInfo["value"]["userWindowId"]) {
+                        iuserWindowId = videoMediaWorkingInfo["value"]["userWindowId"];
+                    }
+                    if (undefined != videoMediaWorkingInfo["value"]["isNeedDestroyWindow"] && true == videoMediaWorkingInfo["value"]["isNeedDestroyWindow"]) {//用户需要释放该视频窗口
+                        bIsNeedDestroyWindow = true;
+                        delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[iuserWindowId.toString()];
+                    }
+                    delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[value["cid"]];
+                }
+                if (true == bIsNeedDestroyWindow) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"isNeedDestroyWindow\":{1}, \"userWindowId\":{2}}}".format(
+                        parseInt(value["cid"]), bIsNeedDestroyWindow, iuserWindowId
+                    );
+                } else if (0 != iuserWindowId) {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}, \"userWindowId\":{1}}}".format(
+                        parseInt(value["cid"]), iuserWindowId
+                    );
+                }
+                else {
+                    param = "{\"description\":\"msp_delete_video_channel\", \"cmd\": 65540, \"param\":{\"resID\":{0}}}".format(
+                        parseInt(value["cid"])
+                    );
+                }
 
                 cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
 
@@ -6995,7 +7874,9 @@ ICPSDK_Dispatch_Event.prototype.delResourceNotify = function(event) {
                 cloudICP.util.callStatusMgr.updateConfInfo(retEvent["value"], true);
 
                 this.EVENT_LIST["PhoneConfNotify"]["OnCreateConfSuccess"](retEvent);
-            
+                var strWindowinfo = cloudICP.util.callStatusMgr.windowInfos[2147483647];
+
+                cloudICP.util.callStatusMgr.windowInfos[event["value"]["unifiedAccessCode"]] = strWindowinfo;
                 var url = cloudICP.getSdkServerUrl() + "/v1/phoneconf/" + cloudICP.userInfo["isdn"];
                 var ajaxCfg = {
                     "type": "POST",
@@ -7327,28 +8208,29 @@ ICPSDK_Dispatch_Event.prototype.delResourceNotify = function(event) {
             }  else if (value["msgType"] == "ConfQueryConfListByAttendee") {
                 if (statusValue == "4090") {
                     var confInfos = [];
-                    for (var index = 0; index < value["confInfos"].length; index++) {
-                        confInfos.push({
-                            "confId": value["confInfos"][index]["confInternalId"],
-                            "isVideo": value["confInfos"][index]["isVideo"],
-                            "passcode": value["confInfos"][index]["passcode"],
-                            "unifiedAccessCode": value["confInfos"][index]["unifiedAccessCode"],
-                        });
+                    if (!!value["confInfos"]) {
+                        for (var index = 0; index < value["confInfos"].length; index++) {
+                            confInfos.push({
+                                "confId": value["confInfos"][index]["confInternalId"],
+                                "isVideo": value["confInfos"][index]["isVideo"],
+                                "passcode": value["confInfos"][index]["passcode"],
+                                "unifiedAccessCode": value["confInfos"][index]["unifiedAccessCode"],
+                            });
 
-                        delete value["confInfos"][index].confExternalId;
-                        var tmp = value["confInfos"][index]["confInternalId"];
-                        value["confInfos"][index]["confId"] = tmp;
-                        delete value["confInfos"][index].confInternalId;
-                    }
-
-                    var retEvent = { 
-                        "eventName": "OnQueryConfListByAttendeeResult", 
-                        "rsp": "0",
-                        "value": {
-                            "confInfos": value["confInfos"]
+                            delete value["confInfos"][index].confExternalId;
+                            var tmp = value["confInfos"][index]["confInternalId"];
+                            value["confInfos"][index]["confId"] = tmp;
+                            delete value["confInfos"][index].confInternalId;
                         }
-                    };
-                    this.EVENT_LIST["PhoneConfNotify"]["OnQueryConfListByAttendeeResult"](retEvent);
+                        var retEvent = {
+                            "eventName": "OnQueryConfListByAttendeeResult",
+                            "rsp": "0",
+                            "value": {
+                                "confInfos": value["confInfos"]
+                            }
+                        };
+                        this.EVENT_LIST["PhoneConfNotify"]["OnQueryConfListByAttendeeResult"](retEvent);
+                    }
                 } else if (statusValue == "4091") {
                     var retEvent = { 
                         "eventName": "OnQueryConfListByAttendeeResult", 
@@ -7375,6 +8257,29 @@ ICPSDK_Dispatch_Event.prototype.delResourceNotify = function(event) {
                         }
                     };
                     this.EVENT_LIST["PhoneConfNotify"]["OnAddConfMembersFailure"](retEvent);
+                }
+            } else if (value["msgType"] == "SetChairman") {
+                if (statusValue == "4090") {
+                    var retEvent = {
+                        "eventName": "OnConfSetChairmanSuccess",
+                        "rsp": "0",
+                        "value": {
+                            "confId": value["confId"],
+                            "chairman": value["chairman"]
+                        }
+                    };
+                    this.EVENT_LIST["PhoneConfNotify"]["OnConfSetChairmanSuccess"](retEvent);
+                } else if (statusValue == "4091") {
+                    var retEvent = {
+                        "eventName": "OnConfSetChairmanFailure",
+                        "rsp": event["value"]["rsp"],
+                        "retMsg": event["value"]["retMsg"],
+                        "value": {
+                            "confId": value["confId"],
+                            "chairman": value["chairman"]
+                        }
+                    };
+                    this.EVENT_LIST["PhoneConfNotify"]["OnConfSetChairmanFailure"](retEvent);
                 }
             } 
             break;
@@ -7843,7 +8748,11 @@ ICPSDK_Dispatch_Event.prototype.delVoiceNotify = function(event) {
 
     var to;
     if (undefined != value["to"]) {
-        to = value["to"];
+        if ("" != value["to"]) {
+            to = value["to"];
+        } else if (undefined != value["callee"]) {
+            to = value["callee"];
+        }
         delete value.to;
     } else {
         to = value["callee"];
@@ -8943,7 +9852,7 @@ ICPSDK_Dispatch_Event.prototype.delVoiceNotify = function(event) {
 };
 
 /**
- * 语音事件通知
+ * msp返回事件通知
  */
 ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
     switch (event["rsp"]) {
@@ -8963,7 +9872,113 @@ ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
         case 196610:
             //窗口创建成功
             var videoEvent = cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["resID"].toString()];
+            if (undefined == videoEvent) {
+                if (undefined != event["userWindowId"]) {//创建用户窗口成功
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["userWindowId"].toString()] = {};
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["userWindowId"].toString()]["value"] = {};
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["userWindowId"].toString()]["value"]["windowHandle"] = event["windowHandle"];
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["userWindowId"].toString()]["value"]["windowId"] = event["userWindowId"];
+                    var retEvent = {
+                        "eventName": "OnCreateWindowResult",
+                        "rsp": event["result"].toString(),
+                        "value": {
+                            "userWindowId": event["userWindowId"],
+                            "windowHandle": event["windowHandle"],
+                            "width": event["width"],
+                            "height": event["height"],
+                            "posX": event["posX"],
+                            "posY": event["posY"],
+                            "showToolbar": event["showToolbar"],
+                            "buttonIDs": event["buttonIDs"],
+                            "hide": event["hide"],
+                            "enableDrag": event["enableDrag"]
+                        }
+                    }
+                    this.EVENT_LIST["MSPNotify"]["OnCreateWindowResult"](retEvent);
+                }
+                return;
+            }
+
             var value = videoEvent["value"];
+            //通知上层OnCallConnect事件
+            var callStatusMgr = cloudICP.util.callStatusMgr;
+            var call = callStatusMgr.allCalls[value["cid"]];
+            var newEvent = {
+                "eventName": "",
+                "rsp": value["rsp"],
+                "value": {
+                    "callee": value["callee"],
+                    "caller": value["caller"],
+                    "cid": value["cid"],
+                    "fmt": value["fmt"]
+                }
+            }
+            var strWssUrl = "";
+            var strFmtType = value["fmtType"];
+            if ((value["winMode"] == "wssflow") && (undefined != event["wssflowSslEnable"])) {
+                if (event["wssflowSslEnable"] == true) {
+                    strWssUrl = "wss://localhost.cloudicp.huawei.com:" + event["wssflowPort"].toString();
+                    newEvent["value"]["wssUrl"] = strWssUrl;
+                } else {
+                    strWssUrl = "ws://localhost.cloudicp.huawei.com:" + event["wssflowPort"].toString();
+                    newEvent["value"]["wssUrl"] = strWssUrl;
+                }
+            }
+            var bNeedNotify = true;
+            if (call && call.callType == callStatusMgr.MONITOR) {
+                newEvent["value"]["calltype"] = "monitor";
+                if (undefined != value["userWindowId"]) {
+                    newEvent["value"]["userWindowId"] = value["userWindowId"];
+                }
+            } else if (call && call.callType == callStatusMgr.VIDEOCONF) {
+                newEvent["value"]["confId"] = call["confId"];
+                newEvent["value"]["isVideo"] = "true";
+                newEvent["eventName"] = "OnConfConnect";
+                this.EVENT_LIST["PhoneConfNotify"]["OnConfConnect"](newEvent);
+
+                var ajaxCfg = {
+                    "type": "POST",
+                    "url": cloudICP.getSdkServerUrl() + "/v1/phoneconf/" + cloudICP.userInfo["isdn"],
+                    "data": {
+                        "opt": "sub",
+                        "confId": call["confId"]
+                    },
+                    "callback": function (data) {
+                        if (data["rsp"] != "0") {
+                            var retEvent = {
+                                "eventName": "OnSubscribeConfFailure",
+                                "rsp": data["rsp"],
+                            }
+
+                            cloudICP.dispatch.event.EVENT_LIST["PhoneConfNotify"]["OnSubscribeConfFailure"](retEvent);
+                        } else {
+                            cloudICP.util.callStatusMgr.confSubMgr[call["confId"]] = true;
+                        }
+                    }
+                }
+                cloudICP.util.ajax(ajaxCfg);
+                bNeedNotify = false;
+            } else if (call && call.callType == callStatusMgr.VIDEODISPATCH) {
+                newEvent["value"]["calltype"] = "dispatch";
+                newEvent["value"]["src"] = value["uri"];
+                newEvent["value"]["direction"] = "in";
+                newEvent["value"]["ptz"] = value["ptz"];
+                newEvent["value"]["mute"] = value["mute"];
+                newEvent["eventName"] = "OnCallConnect";
+                this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
+                bNeedNotify = false;
+            } else {
+                newEvent["value"]["calltype"] = "video";
+            }
+            if (true == bNeedNotify) {
+                newEvent["value"]["src"] = "";
+                newEvent["value"]["direction"] = value["direction"];
+                newEvent["value"]["ptz"] = value["ptz"];
+                newEvent["value"]["mute"] = value["mute"];
+                newEvent["eventName"] = "OnCallConnect";
+                this.EVENT_LIST["VoiceNotify"]["OnCallConnect"](newEvent);
+            }
+            //完成通知
 
             var user = cloudICP.userInfo["isdn"];
             var peerUser = value["callee"];
@@ -8975,6 +9990,55 @@ ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
             if (videoEvent["value"]["camera"] != "-1" &&
                 videoEvent["value"]["camera"] != "0") {
                 recvOnly = true;
+            }
+
+            var iPort = -1;
+            var iWidth = 176;
+            var iHeight = 144;
+            if ((event["mode"] == "wssflow") && (event["wssflowPort"] != undefined)) {
+                iPort = parseInt(event["wssflowPort"]);
+                iWidth = parseInt(event["width"]);
+                iHeight = parseInt(event["height"]);
+                // ----/////////////////////////////////// 调用——start
+                if (!!cloudICP.config["demo_wssflow_enable"]) {
+                    if (!window.yuvIndex) {
+                        window.yuvIndex = 1;
+                    } else {
+                        window.yuvIndex++;
+                        window.yuvIndex %= 17;
+                        window.yuvIndex = window.yuvIndex == 0 ? 1 : window.yuvIndex;
+                    }
+                    const notifyMSP = function () {
+                        console.info("调用改变分辨率接口");
+                    };
+                    const box = document.getElementById(`yuv-player-00${window.yuvIndex}`);
+                    console.info('box---------', box)
+                    var baseWidth = 16;
+                    var baseHeight = 9;
+                    var baseWidthHeight = parseInt(iWidth * 9 / 16);
+                    var baseHeightWidth = parseInt(iHeight * 16 / 9);
+                    if (baseWidthHeight <= iHeight) {
+                        baseWidth = iWidth;
+                        baseHeight = baseWidthHeight;
+                    } else if (baseHeightWidth <= iWidth) {
+                        baseWidth = baseHeightWidth;
+                        baseHeight = iHeight;
+                    }
+                    box.style.width = baseWidth + 'px';
+                    box.style.height = baseHeight + 'px';
+                    new CREATE_PLAYER_DEMO({
+                        wsUrl: strWssUrl,
+                        port: iPort,
+                        box,
+                        sharpType: {
+                            width: iWidth,
+                            height: iHeight
+                        },
+                        cid: value["cid"],
+                        changeCB: notifyMSP,
+                    });
+                }
+                // ----///////////////////////////////////——end
             }
 
             if (value && value["cid"] != undefined) {
@@ -8991,21 +10055,54 @@ ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
             }
 
             cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["resID"].toString()]["hwnd"] = event["windowHandle"];
-
+            var bHide = false;
+            if (undefined != event["hide"]) {
+                bHide = event["hide"];
+            }
             let localArr = value["local_video"].split(",");
             let serverArr = value["server_video"].split(",");
-
+            var videoConfLocalWindow = true;
+            if (undefined != value["videoConfLocalWindow"]) {
+                videoConfLocalWindow = value["videoConfLocalWindow"];
+            }
             if (value["rts_ssrc"] != undefined) {
-                var param = "{\"description\":\"msp_create_video_channel\", \"cmd\": 65539,  \"param\":{\"resID\":{0}, \"winHandle\":{9}, \"mediaInfo\":{\"localIP\":\"{1}\", \"localPort\":{2}, \"remoteIP\":\"{3}\",\"remotePort\":{4}, \"playload\":{5}, \"ssrc\":{6}, \"fmt\":\"{7}\", \"recvOnly\":{8}, \"rtsSSrc\": {10}, \"user\":\"{11}\", \"peerUser\":\"{12}\", \"mode\":\"{13}\"  }}}".format(
-                    parseInt(value["cid"]), cloudICP.config.localIP, localArr[1], serverArr[0], serverArr[1], parseInt(value["video"]), parseInt(value["video_ssrc"]), value["fmt"], recvOnly, parseInt(event["windowHandle"]), value["rts_ssrc"], user, peerUser, event["mode"]
-                )
+                if (undefined != event["userWindowId"]) {
+                param = "{\"description\":\"msp_create_video_channel\", \"cmd\": 65539,  \"param\":{\"resID\":{0}, \"winHandle\":{9}, \"mediaInfo\":{\"localIP\":\"{1}\", \"localPort\":{2}, \"remoteIP\":\"{3}\",\"remotePort\":{4}, \"playload\":{5}, \"ssrc\":{6}, \"fmt\":\"{7}\", \"recvOnly\":{8}, \"rtsSSrc\": {10}, \"user\":\"{11}\", \"peerUser\":\"{12}\", \"mode\":\"{13}\", \"port\":{14}, \"fmtType\":\"{15}\", \"width\": {16}, \"height\": {17}, \"videoConfLocalWindow\": {18}, \"userWindowId\":{19}  }}}".format(
+                    parseInt(value["cid"]), cloudICP.config.localIP, localArr[1], serverArr[0], serverArr[1], parseInt(value["video"]), parseInt(value["video_ssrc"]), value["fmt"], recvOnly, parseInt(event["windowHandle"]), value["rts_ssrc"], user, peerUser, event["mode"], iPort, strFmtType, iWidth, iHeight, videoConfLocalWindow, event["userWindowId"]
+                );
+                } else {
+                param = "{\"description\":\"msp_create_video_channel\", \"cmd\": 65539,  \"param\":{\"resID\":{0}, \"winHandle\":{9}, \"mediaInfo\":{\"localIP\":\"{1}\", \"localPort\":{2}, \"remoteIP\":\"{3}\",\"remotePort\":{4}, \"playload\":{5}, \"ssrc\":{6}, \"fmt\":\"{7}\", \"recvOnly\":{8}, \"rtsSSrc\": {10}, \"user\":\"{11}\", \"peerUser\":\"{12}\", \"mode\":\"{13}\", \"port\":{14}, \"fmtType\":\"{15}\", \"width\": {16}, \"height\": {17}, \"videoConfLocalWindow\": {18}  }}}".format(
+                    parseInt(value["cid"]), cloudICP.config.localIP, localArr[1], serverArr[0], serverArr[1], parseInt(value["video"]), parseInt(value["video_ssrc"]), value["fmt"], recvOnly, parseInt(event["windowHandle"]), value["rts_ssrc"], user, peerUser, event["mode"], iPort, strFmtType, iWidth, iHeight, videoConfLocalWindow
+                );
+		}
             } else {
-                var param = "{\"description\":\"msp_create_video_channel\", \"cmd\": 65539,  \"param\":{\"resID\":{0}, \"winHandle\":{9}, \"mediaInfo\":{\"localIP\":\"{1}\", \"localPort\":{2}, \"remoteIP\":\"{3}\",\"remotePort\":{4}, \"playload\":{5}, \"ssrc\":{6}, \"fmt\":\"{7}\", \"recvOnly\":{8}, \"user\":\"{10}\", \"peerUser\":\"{11}\", \"mode\":\"{12}\" }}}".format(
-                    parseInt(value["cid"]), cloudICP.config.localIP, localArr[1], serverArr[0], serverArr[1], parseInt(value["video"]), parseInt(value["video_ssrc"]), value["fmt"], recvOnly, parseInt(event["windowHandle"]), user, peerUser, event["mode"]
-                )
+                if (undefined != event["userWindowId"]) {
+                param = "{\"description\":\"msp_create_video_channel\", \"cmd\": 65539,  \"param\":{\"resID\":{0}, \"winHandle\":{9}, \"mediaInfo\":{\"localIP\":\"{1}\", \"localPort\":{2}, \"remoteIP\":\"{3}\",\"remotePort\":{4}, \"playload\":{5}, \"ssrc\":{6}, \"fmt\":\"{7}\", \"recvOnly\":{8}, \"user\":\"{10}\", \"peerUser\":\"{11}\", \"mode\":\"{12}\", \"port\":{13}, \"fmtType\":\"{14}\", \"width\": {15}, \"height\": {16}, \"videoConfLocalWindow\": {17}, \"userWindowId\":{18}  }}}".format(
+                    parseInt(value["cid"]), cloudICP.config.localIP, localArr[1], serverArr[0], serverArr[1], parseInt(value["video"]), parseInt(value["video_ssrc"]), value["fmt"], recvOnly, parseInt(event["windowHandle"]), user, peerUser, event["mode"], iPort, strFmtType, iWidth, iHeight, videoConfLocalWindow, event["userWindowId"]
+                );
+                } else {
+                param = "{\"description\":\"msp_create_video_channel\", \"cmd\": 65539,  \"param\":{\"resID\":{0}, \"winHandle\":{9}, \"mediaInfo\":{\"localIP\":\"{1}\", \"localPort\":{2}, \"remoteIP\":\"{3}\",\"remotePort\":{4}, \"playload\":{5}, \"ssrc\":{6}, \"fmt\":\"{7}\", \"recvOnly\":{8}, \"user\":\"{10}\", \"peerUser\":\"{11}\", \"mode\":\"{12}\", \"port\":{13}, \"fmtType\":\"{14}\", \"width\": {15}, \"height\": {16}, \"videoConfLocalWindow\": {17}  }}}".format(
+                    parseInt(value["cid"]), cloudICP.config.localIP, localArr[1], serverArr[0], serverArr[1], parseInt(value["video"]), parseInt(value["video_ssrc"]), value["fmt"], recvOnly, parseInt(event["windowHandle"]), user, peerUser, event["mode"], iPort, strFmtType, iWidth, iHeight, videoConfLocalWindow
+                );
+		}
             }
 
             cloudICP.dispatch.webSocket.sendDataToMediaSDK(param, true);
+            break;
+        case 196618:
+            if (undefined != event["userWindowId"]) {
+                var meidaSDKparam = "{\"description\":\"msp_stop_use_userWindow\", \"cmd\": 196618, \"param\":{\"userWindowId\":{0}}}".format(
+                    parseInt(event["userWindowId"])
+                );
+                cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+                if ("-1" == event["userWindowId"].toString()) {//清除全部媒体面时触发
+                    Object.keys(cloudICP.util.callStatusMgr.windowInfos).forEach(function (key) {
+                        if (cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] != undefined) {
+                            delete cloudICP.util.callStatusMgr.windowInfos[key];
+                        }
+                    });
+                }
+            }
             break;
         case 131077:
             var retEvent = {
@@ -9181,7 +10278,22 @@ ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
                     resID = key;
                 }
             });
-            if (resID == undefined) return;
+            if (resID == undefined) {
+                if (undefined != event["userWindowId"] && undefined != event["isNeedDestroyWindow"] && true == event["isNeedDestroyWindow"]) {
+                    var meidaSDKparam = "{\"description\":\"msp_delete_close_userWindow\", \"cmd\": 196613, \"param\":{\"userWindowId\":{0}}}".format(
+                        parseInt(event["userWindowId"])
+                    );
+                    cloudICP.dispatch.webSocket.sendDataToMediaSDK(meidaSDKparam, true);
+                    if ("-1" == event["userWindowId"].toString()) {//去除用户窗被业务使用，但未创建媒体面的标记
+                        Object.keys(cloudICP.util.callStatusMgr.windowInfos).forEach(function (key) {
+                            if (cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] != undefined) {
+                                delete cloudICP.util.callStatusMgr.windowInfos[key];
+                            }
+                        });
+                    }
+                }
+                return;
+            }
             var callStatusMgr = cloudICP.util.callStatusMgr;
             var call =  callStatusMgr.allCalls[resID];
             if (call) {
@@ -9210,7 +10322,18 @@ ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
                 }
             }
             break;
-        case 65551:
+        case 20481:
+            delete cloudICP.util.callStatusMgr.videoMediaInfoBuf[event["userWindowId"].toString()];
+            var retEvent = {
+                "eventName": "OnDestroyWindowResult",
+                "rsp": event["result"].toString(),
+                "value": {
+                    "windowHandle": event["windowHandle"]
+                }
+            }
+            this.EVENT_LIST["MSPNotify"]["OnDestroyWindowResult"](retEvent);
+            break;
+        case 196614:
             var retEvent = {
                 "eventName": "OnWindowOnTopResult",
                 "rsp": event["result"],
@@ -9220,6 +10343,49 @@ ICPSDK_Dispatch_Event.prototype.delMSPNotify = function (event) {
                 }
             }
             this.EVENT_LIST["MSPNotify"]["OnWindowOnTopResult"](retEvent);
+            break;
+        case 196615:
+            var retEvent = {
+                "eventName": "OnWindowDragEnableResult",
+                "rsp": event["result"],
+                "value": {
+                    "cid": event["cid"],
+                    "isDrag": event["isDrag"]
+                }
+            }
+            this.EVENT_LIST["MSPNotify"]["OnWindowDragEnableResult"](retEvent);
+            break;
+        case 196616:
+            var retEvent = {
+                "eventName": "OnHideVideoWindowResult",
+                "rsp": event["result"],
+                "value": {
+                    "cid": event["cid"]
+                }
+            }
+            this.EVENT_LIST["MSPNotify"]["OnHideVideoWindowResult"](retEvent);
+            break;
+        case 196617:
+            var retEvent = {
+                "eventName": "OnWindowShowBorderResult",
+                "rsp": event["result"],
+                "value": {
+                    "resID": event["resID"],
+                    "border": event["border"]
+                }
+            }
+            this.EVENT_LIST["MSPNotify"]["OnWindowShowBorderResult"](retEvent);
+            break;
+        case 258049:
+            var retEvent = {
+                "eventName": "OnWindowOperateNotify",
+                "rsp": event["result"],
+                "value": {
+                    "cid": event["param"]["cid"],
+                    "eventID": event["param"]["eventID"]
+                }
+            }
+            this.EVENT_LIST["MSPNotify"]["OnWindowOperateNotify"](retEvent);
             break;
         default:
             break;
@@ -12509,9 +13675,37 @@ ICPSDK_Dispatch_Sms.prototype.sendDispMMS = function(param) {
         }
     }
 
+    if (undefined != param["audioinfo"]) {
+        if (!cloudICP.util.isNumber(param["audioinfo"])) {
+            result["rsp"] = "-2";
+            result["desc"] = "sendDispMMS: audioinfo is invalid";
+            param["callback"](result);
+            return;
+        } else if ("" == param["audiocontent"]) {
+            result["rsp"] = "-2";
+            result["desc"] = "sendDispMMS: audioinfo is valid, audiocontent is invalid";
+            param["callback"](result);
+            return;
+        }
+    }
+    if (undefined != param["audiocontent"]) {
+        if ("" == param["audiocontent"]) {
+            result["rsp"] = "-2";
+            result["desc"] = "sendDispMMS: audiocontent is invalid";
+            param["callback"](result);
+            return;
+        } else if (!param["audiocontent"]) {
+            result["rsp"] = "-2";
+            result["desc"] = "sendDispMMS: audiocontent is valid, audioinfo is invalid";
+            param["callback"](result);
+            return;
+        }
+    }
+
     sendDispMMSParam["param"] = {};
     sendDispMMSParam["param"]["msgid"] = "";
     sendDispMMSParam["param"]["dest"] = "";
+    sendDispMMSParam["param"]["attach_thumb"] = "audioShortMessage.amr";
 
     var tmpArr = [];
 
@@ -12548,6 +13742,20 @@ ICPSDK_Dispatch_Sms.prototype.sendDispMMS = function(param) {
     sendDispMMSParam["param"]["content"] = param["content"];
     // sendDispMMSParam["param"]["dest"] = param["dest"];
     sendDispMMSParam["param"]["attach"] = param["attach"];
+    if (param["audiocontent"] || param["audioinfo"]) {
+        if (param["audiocontent"] && param["audioinfo"]) {
+            sendDispMMSParam["param"]["audiocontent"] = param["audiocontent"];
+            sendDispMMSParam["param"]["audioinfo"] = param["audioinfo"];
+        }else {
+            result["rsp"] = "-2";
+            result["desc"] = "sendDispMMS: audio msg must has audiocontent and audioinfo";
+            param["callback"](result);
+            return;
+        }
+        if (param["attach_thumb"]) {
+            sendDispMMSParam["param"]["attach_thumb"] = param["attach_thumb"];
+        }
+    }
 
     var url = cloudICP.getSdkServerUrl() + "/v1/sds/" + cloudICP.userInfo["isdn"] + "/mms";
 
@@ -12657,27 +13865,75 @@ ICPSDK_Dispatch_Video.prototype.monitorVideo = function(param) {
     }
 
     var strWindowinfo = param["monitorParam"];
-    if (undefined == param["monitorParam"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["monitorParam"]["showToolbar"])) {
-        result["desc"] = "monitorVideo: The showToolbar is invalid, use defult value 1";
-        param["callback"](result);
-        strWindowinfo["showToolbar"] = 1;
+    if (undefined == param["monitorParam"]["mode"] || !cloudICP.util.checkmode(param["monitorParam"]["mode"])) {
+        result["desc"] += "monitorVideo: The mode is invalid, use defult value " + cloudICP.config["mode"] + "; ";
+        strWindowinfo["mode"] = cloudICP.config["mode"];
     }
 
-    if (undefined == param["monitorParam"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["monitorParam"]["buttonIDs"])) {
-        result["desc"] = "monitorVideo: The buttonIDs is invalid, use defult value 0";
-        param["callback"](result);
-        strWindowinfo["buttonIDs"] = 0;
+    if ("wssflow" == strWindowinfo["mode"]) {//推流模式
+        if (undefined == param["monitorParam"]["width"] || !cloudICP.util.isNumber(param["monitorParam"]["width"]) || param["monitorParam"]["width"] > 2147483647 || param["monitorParam"]["width"] < 0) {
+            result["desc"] = "monitorVideo: The width is invalid.";
+            param["callback"](result);
+            return;
+        }
+        if (undefined == param["monitorParam"]["height"] || !cloudICP.util.isNumber(param["monitorParam"]["height"]) || param["monitorParam"]["height"] > 2147483647 || param["monitorParam"]["height"] < 0) {
+            result["desc"] = "monitorVideo: The height is invalid.";
+            param["callback"](result);
+            return;
+        }
+        delete strWindowinfo["userWindowId"];
     }
-
-    var callStatusMgr = cloudICP.util.callStatusMgr;
-    strWindowinfo["to"] = param["to"];
-    callStatusMgr.windowInfos[param["to"]] = strWindowinfo;
-    if (cloudICP.util.callStatusMgr.currentCallState == cloudICP.util.callStatusMgr.RINGING) {
-        result["rsp"] = "-4";
-        result["desc"] = "monitorVideo: There is a call is ringing."
+    else if ("window" == strWindowinfo["mode"]) {//弹窗模式
+        if (!cloudICP.util.checkWindowParam(param["monitorParam"]["posX"])) {
+            result["desc"] += "monitorVideo: The posX is invalid, use defult value 400; ";
+            strWindowinfo["posX"] = 400;
+        }
+        if (!cloudICP.util.checkWindowParam(param["monitorParam"]["posY"])) {
+            result["desc"] += "monitorVideo: The posY is invalid, use defult value 400; ";
+            strWindowinfo["posY"] = 400;
+        }
+        if (!cloudICP.util.checkWindowParam(param["monitorParam"]["width"])) {
+            result["desc"] += "monitorVideo: The width is invalid, use defult value 640; ";
+            strWindowinfo["width"] = 640;
+        }
+        if (!cloudICP.util.checkWindowParam(param["monitorParam"]["height"])) {
+            result["desc"] += "monitorVideo: The height is invalid, use defult value 480; ";
+            strWindowinfo["height"] = 480;
+        }
+        if (undefined == param["monitorParam"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["monitorParam"]["showToolbar"])) {
+            result["desc"] += "monitorVideo: The showToolbar is invalid, use defult value 1; ";
+            strWindowinfo["showToolbar"] = 1;
+        }
+        if (undefined == param["monitorParam"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["monitorParam"]["buttonIDs"])) {
+            result["desc"] += "monitorVideo: The buttonIDs is invalid, use defult value 0; ";
+            strWindowinfo["buttonIDs"] = 0;
+        }
+        if (undefined == param["monitorParam"]["hide"]) {
+            result["desc"] += "monitorVideo: The hide is invalid, use defult value false; ";
+            strWindowinfo["hide"] = false;
+        }
+        if (undefined == param["monitorParam"]["enableDrag"]) {
+            result["desc"] += "monitorVideo: The enableDrag is invalid, use defult value true; ";
+            strWindowinfo["enableDrag"] = true;
+        }
+        if (undefined != param["monitorParam"]["userWindowId"]) {//检测userWindowId是否被占用、值是否有效
+            var iResult = cloudICP.util.checkUserWindowId(param["monitorParam"]["userWindowId"], "use");
+            if (0 == iResult) {
+                result["desc"] = "monitorVideo: The userWindowId is invalid.";
+                param["callback"](result);
+                return;
+            } else if (2 == iResult) {
+                result["desc"] = "monitorVideo: The userWindowId not create window or used in other video operate.";
+                param["callback"](result);
+                return;
+            }
+        }
+    } else {
+        result["desc"] = "monitorVideo: The mode is invalid.";
         param["callback"](result);
         return;
     }
+
 
     if (cloudICP.dispatch.video.currentVideoAbility >= cloudICP.dispatch.video.MAX_VIDEO_ABILITY) {
         result["rsp"] = "-5";
@@ -12710,9 +13966,19 @@ ICPSDK_Dispatch_Video.prototype.monitorVideo = function(param) {
         "type": "PUT",
         "url": url,
         "data": requestParam,
-        "callback": param["callback"]
+        "callback": function (data) {
+            if (undefined != data["rsp"] && "0" == data["rsp"].toString()) {
+                cloudICP.util.callStatusMgr.windowInfos[param["to"]] = strWindowinfo;
+                if (undefined != param["monitorParam"]["userWindowId"] && undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["monitorParam"]["userWindowId"].toString()]) {
+                    cloudICP.util.callStatusMgr.videoMediaInfoBuf[param["monitorParam"]["userWindowId"].toString()]["value"]["to"] = parseInt(param["to"]);
+                }
+            }
+            param["callback"](data)
+        }
     }
     cloudICP.util.ajax(ajaxCfg);
+    result["rsp"] = "0";
+    param["callback"](result);
 }
 
 /**
@@ -12793,20 +14059,57 @@ ICPSDK_Dispatch_Video.prototype.dialVideo = function(param) {
     }
 
     var strWindowinfo = param["dialVideoParam"];
-    if (undefined == param["dialVideoParam"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["dialVideoParam"]["showToolbar"])) {
-        result["desc"] = "dialVideo: The showToolbar is invalid, use defult value 1";
-        param["callback"](result);
-        strWindowinfo["showToolbar"] = 1;
+    if (undefined == param["dialVideoParam"]["mode"] || !cloudICP.util.checkmode(param["dialVideoParam"]["mode"])) {
+        console.log("dialVideo: The mode is invalid, use defult value " + cloudICP.config["mode"]);
+        strWindowinfo["mode"] = cloudICP.config["mode"];
     }
 
-    if (undefined == param["dialVideoParam"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["dialVideoParam"]["buttonIDs"])) {
-        result["desc"] = "dialVideo: The buttonIDs is invalid, use defult value 0";
-        param["callback"](result);
-        strWindowinfo["buttonIDs"] = 0;
+    if ("wssflow" == strWindowinfo["mode"]) {//推流模式
+        if (undefined == param["dialVideoParam"]["width"] || !cloudICP.util.isNumber(param["dialVideoParam"]["width"]) || param["dialVideoParam"]["width"] > 2147483647 || param["dialVideoParam"]["width"] < 0) {
+            result["desc"] = "dialVideo: The width is invalid.";
+            param["callback"](result);
+            return;
+        }
+        if (undefined == param["dialVideoParam"]["height"] || !cloudICP.util.isNumber(param["dialVideoParam"]["height"]) || param["dialVideoParam"]["height"] > 2147483647 || param["dialVideoParam"]["height"] < 0) {
+            result["desc"] = "dialVideo: The height is invalid.";
+            param["callback"](result);
+            return;
+        }
     }
+    else if ("window" == strWindowinfo["mode"]) {//弹窗模式
+        if (!cloudICP.util.checkWindowParam(param["dialVideoParam"]["posX"])) {
+            result["desc"] += "dialVideo: The posX is invalid, use defult value 400; ";
+            strWindowinfo["posX"] = 400;
+        }
+        if (!cloudICP.util.checkWindowParam(param["dialVideoParam"]["posY"])) {
+            result["desc"] += "dialVideo: The posY is invalid, use defult value 400; ";
+            strWindowinfo["posY"] = 400;
+        }
+        if (!cloudICP.util.checkWindowParam(param["dialVideoParam"]["width"])) {
+            result["desc"] += "dialVideo: The width is invalid, use defult value 640; ";
+            strWindowinfo["width"] = 640;
+        }
+        if (!cloudICP.util.checkWindowParam(param["dialVideoParam"]["height"])) {
+            result["desc"] += "dialVideo: The height is invalid, use defult value 480; ";
+            strWindowinfo["height"] = 480;
+        }
+        if (undefined == param["dialVideoParam"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["dialVideoParam"]["showToolbar"])) {
+            result["desc"] += "dialVideo: The showToolbar is invalid, use defult value 1; ";
+            strWindowinfo["showToolbar"] = 1;
+        }
+        if (undefined == param["dialVideoParam"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["dialVideoParam"]["buttonIDs"])) {
+            result["desc"] += "dialVideo: The buttonIDs is invalid, use defult value 0; ";
+            strWindowinfo["buttonIDs"] = 0;
+        }
+    } else {
+        result["desc"] = "dialVideo: The mode is invalid.";
+        param["callback"](result);
+        return;
+    }
+
 
     var callStatusMgr = cloudICP.util.callStatusMgr;
-    strWindowinfo["to"] = param["to"];
+    //strWindowinfo["to"] = param["to"];
     callStatusMgr.windowInfos[param["to"]] = strWindowinfo;
     if (callStatusMgr.numberOfCall[callStatusMgr.VIDEO] + callStatusMgr.numberOfCall[callStatusMgr.VIDEOCONF] >= cloudICP.dispatch.video.MAX_VIDEO_DIAL_NUM || 
         cloudICP.dispatch.video.currentVideoAbility >= cloudICP.dispatch.video.MAX_VIDEO_ABILITY) {
@@ -12884,56 +14187,67 @@ ICPSDK_Dispatch_Video.prototype.answer = function(param) {
         param["callback"](result);
         return;
     }
-    
+    var strWindowinfo = {};
+    if (!!param["windowInfo"]) {
+        strWindowinfo = param["windowInfo"];
+    }
+    if (param["windowInfo"] == undefined || undefined == param["windowInfo"]["mode"] || !cloudICP.util.checkmode(param["windowInfo"]["mode"])) {
+        console.log("answer: The mode is invalid, use defult value " + cloudICP.config["mode"]);
+        strWindowinfo["mode"] = cloudICP.config["mode"];
+    }
     if (param["windowInfo"] != undefined) {
-
-        if (!cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647) {
-            result["desc"] = "answer: The width is invalid";
+        if ("wssflow" == strWindowinfo["mode"]) {//推流模式
+            if (undefined == param["windowInfo"]["width"] || !cloudICP.util.isNumber(param["windowInfo"]["width"]) || param["windowInfo"]["width"] > 2147483647 || param["windowInfo"]["width"] < 0) {
+                result["desc"] = "answer: The width is invalid.";
+                param["callback"](result);
+                return;
+            }
+            if (undefined == param["windowInfo"]["height"] || !cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["height"] > 2147483647 || param["windowInfo"]["height"] < 0) {
+                result["desc"] = "answer: The height is invalid.";
+                param["callback"](result);
+                return;
+            }
+        }
+        else if ("window" == strWindowinfo["mode"]) {//弹窗模式
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posX"])) {
+                result["desc"] += "answer: The posX is invalid, use defult value 400; ";
+                strWindowinfo["posX"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["posY"])) {
+                result["desc"] += "answer: The posY is invalid, use defult value 400; ";
+                strWindowinfo["posY"] = 400;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["width"])) {
+                result["desc"] += "answer: The width is invalid, use defult value 640; ";
+                strWindowinfo["width"] = 640;
+            }
+            if (!cloudICP.util.checkWindowParam(param["windowInfo"]["height"])) {
+                result["desc"] += "answer: The height is invalid, use defult value 480; ";
+                strWindowinfo["height"] = 480;
+            }
+            if (undefined == param["windowInfo"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["windowInfo"]["showToolbar"])) {
+                result["desc"] += "answer: The showToolbar is invalid, use defult value 1; ";
+                strWindowinfo["showToolbar"] = 1;
+            }
+            if (undefined == param["windowInfo"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["windowInfo"]["buttonIDs"])) {
+                result["desc"] += "answer: The buttonIDs is invalid, use defult value 0; ";
+                strWindowinfo["buttonIDs"] = 0;
+            }
+        } else {
+            result["desc"] = "answer: The mode is invalid.";
             param["callback"](result);
             return;
-        }
-
-        if (!cloudICP.util.isNumber(param["windowInfo"]["height"]) || param["windowInfo"]["width"] > 2147483647) {
-            result["desc"] = "answer: The height is invalid";
-            param["callback"](result);
-            return;
-        }
-
-        if (!cloudICP.util.isNumber(param["windowInfo"]["posX"]) || param["windowInfo"]["width"] > 2147483647) {
-            result["desc"] = "answer: The posX is invalid";
-            param["callback"](result);
-            return;
-        }
-
-        if (!cloudICP.util.isNumber(param["windowInfo"]["posY"]) || param["windowInfo"]["width"] > 2147483647) {
-            result["desc"] = "answer: The posY is invalid";
-            param["callback"](result);
-            return;
-        }
-
-        var strWindowinfo = param["windowInfo"];
-        if (undefined == param["windowInfo"]["showToolbar"] || !cloudICP.util.checkshowToolbar(param["windowInfo"]["showToolbar"])) {
-            result["desc"] = "answer: The showToolbar is invalid, use defult value 1";
-            param["callback"](result);
-            strWindowinfo["showToolbar"] = 1;
-        }
-
-        if (undefined == param["windowInfo"]["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["windowInfo"]["buttonIDs"])) {
-            result["desc"] = "answer: The buttonIDs is invalid, use defult value 0";
-            param["callback"](result);
-            strWindowinfo["buttonIDs"] = 0;
         }
         strWindowinfo["iCid"] = param["cid"];
-        var callStatusMgr = cloudICP.util.callStatusMgr;
-        callStatusMgr.windowInfos[param["cid"]] = strWindowinfo;
     } else {
-        var strWindowinfo = {};
         strWindowinfo["showToolbar"] = 1;
         strWindowinfo["buttonIDs"] = 0;
         strWindowinfo["iCid"] = param["cid"];
-        var callStatusMgr = cloudICP.util.callStatusMgr;
-        callStatusMgr.windowInfos[param["cid"]] = strWindowinfo;
+        strWindowinfo["width"] = 176;
+        strWindowinfo["height"] = 144;
     }
+    var callStatusMgr = cloudICP.util.callStatusMgr;
+    callStatusMgr.windowInfos[param["cid"]] = strWindowinfo;
 
     var calls =  cloudICP.util.callStatusMgr.allCalls;
     if (calls[param["cid"]] && calls[param["cid"]]["callState"] >= cloudICP.util.callStatusMgr.CONNECTING) {
@@ -13102,7 +14416,6 @@ ICPSDK_Dispatch_Video.prototype.release = function(param) {
         cloudICP.util.log({ "logLevel": "error", "logMsg": "release: callback is not a function" });
         return;
     }
-
     var result = {
         "rsp": "-3",
         "desc": ""
@@ -13120,8 +14433,31 @@ ICPSDK_Dispatch_Video.prototype.release = function(param) {
         param["callback"](result);
         return;
     }
+    var cid = param["cid"];
+    var callee = 0;
+    Object.keys(cloudICP.util.callStatusMgr.windowInfos).forEach(function (key) {
+        if (undefined != cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] && cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] == param["cid"]) {
+            callee = key;
+        }
+    });
+    if (0 != callee) {
+        var bRuning = false;
+        Object.keys(cloudICP.util.callStatusMgr.videoMediaInfoBuf).forEach(function (key) {
+            if (undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"] && cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"]["userWindowId"] == param["cid"]) {
+                bRuning = true;
+                cid = key;
+            }
+        });
+        if (false == bRuning) {
+            delete cloudICP.util.callStatusMgr.windowInfos[callee.toString()];
+            result["rsp"] = "-2";
+            result["desc"] = "release: The userWindowId(" + param["cid"] + ") is release.";
+            param["callback"](result);
+            return;
+        }
+    }
 
-    var call = cloudICP.util.callStatusMgr.allCalls[param["cid"]];
+    var call = cloudICP.util.callStatusMgr.allCalls[cid];
     if (call && call["caller"] != cloudICP.userInfo["isdn"] && call.callState == cloudICP.util.callStatusMgr.RINGING) {
         result["rsp"] = "-4";
         result["desc"] = "release: The callee can't release a ringing call.";
@@ -13129,11 +14465,17 @@ ICPSDK_Dispatch_Video.prototype.release = function(param) {
         return;
     }
 
+    // 停止提示音
+    var stopRingParam = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
+        parseInt(cid)
+    );
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(stopRingParam, true);
+
     var requestParam = {
         "opt": "close",
-        "cid": param["cid"]
+        "cid": cid
     };
-    var url = cloudICP.getSdkServerUrl() + "/v1/video/" + cloudICP.userInfo["isdn"] + "/close/" + param["cid"];
+    var url = cloudICP.getSdkServerUrl() + "/v1/video/" + cloudICP.userInfo["isdn"] + "/close/" + cid;
     var ajaxCfg = {
         "type": "DELETE",
         "url": url,
@@ -13193,7 +14535,7 @@ ICPSDK_Dispatch_Video.prototype.dispatchVideo = function(param) {
         param["fmt"] = "720P";
     }
 
-    var fmts = ["720P", "D1", "CIF", "NO"];
+    var fmts = ["1080P", "720P", "D1", "CIF", "NO"];
     if (!param["fmt"] || !cloudICP.util.includes(fmts, param["fmt"])) {
         result["desc"] = "dispatchVideo: The fmt is invalid";
         param["callback"](result);
@@ -13471,23 +14813,6 @@ ICPSDK_Dispatch_Video.prototype.ptzctrlCamera = function(param) {
         return;
     }
 
-    var strWindowinfo = {};
-    if (undefined == param["showToolbar"] || !cloudICP.util.checkshowToolbar(param["showToolbar"])) {
-        result["desc"] = "ptzctrlCamera: The showToolbar is invalid, use defult value 1";
-        param["callback"](result);
-        strWindowinfo["showToolbar"] = 1;
-    }
-
-    if (undefined == param["buttonIDs"] || !cloudICP.util.checkbuttonIDs(param["buttonIDs"])) {
-        result["desc"] = "ptzctrlCamera: The buttonIDs is invalid, use defult value 0";
-        param["callback"](result);
-        strWindowinfo["buttonIDs"] = 0;
-    }
-
-    var callStatusMgr = cloudICP.util.callStatusMgr;
-    strWindowinfo["to"] = param["to"];
-    callStatusMgr.windowInfos[param["to"]] = strWindowinfo;
-
     var requestParam = {
         "to": param["to"],
         "param": {
@@ -13503,6 +14828,43 @@ ICPSDK_Dispatch_Video.prototype.ptzctrlCamera = function(param) {
         "callback": param["callback"]
     }
     cloudICP.util.ajax(ajaxCfg);
+};
+
+/**
+ * setWssflowWinFmttype
+ * @param {Object} param {
+ *  callback: ,
+ * }
+ */
+ICPSDK_Dispatch_Video.prototype.setWssflowWinFmttype = function (param) {
+    var msg = { "description": "msp_set_wssflow_window_fmttype", "cmd": 0x10014, "param": {} };
+    if (undefined == param) {
+        cloudICP.util.log({ "logLevel": "error", "logMsg": "setWssflowWinFmttype: param is invalid" });
+        return;
+    }
+
+    var result = {
+        "rsp": "-3",
+        "desc": ""
+    };
+
+    result["rsp"] = "-2";
+    if (!cloudICP.util.checkCid(param["resID"].toString())) {
+        result["desc"] = "setWssflowWindowFmttype: The resID is invalid";
+        if (!!param["callback"]) {
+            param["callback"](result);
+        }
+        return;
+    }
+    msg["param"]["resID"] = parseInt(param["resID"]);
+    msg["param"]["width"] = parseInt(param["width"]);
+    msg["param"]["height"] = parseInt(param["height"]);
+
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(msg, true);
+
+    if (!!param["callback"]) {
+        param["callback"]({ "rsp": "0", "desc": "" });
+    }
 };function ICPSDK_Dispatch_Voice() {
     this.MAX_SUB_LIST = 200;
 
@@ -13944,6 +15306,12 @@ ICPSDK_Dispatch_Voice.prototype.release = function(param) {
         param["callback"](result);
         return;
     }
+
+    // 停止提示音
+    var stopRingParam = "{\"description\":\"msp_stop_tone\", \"cmd\": 131076, \"param\":{\"cid\": {0}}}".format(
+        parseInt(param["cid"])
+    );
+    cloudICP.dispatch.webSocket.sendDataToMediaSDK(stopRingParam, true);
 
     var url = cloudICP.getSdkServerUrl() + "/v1/voicecall/" + cloudICP.userInfo["isdn"] + "/close/" + param["cid"];
     var ajaxCfg = {
@@ -14982,6 +16350,7 @@ ICPSDK_Dispatch_WebSocket.prototype.connectToLocalDeamon = function() {
     } else {
         this._localDeamonWs = new WebSocket(cloudICP.getLocalDeamonUrl());
     }
+
     // 监听sdkserver websocket建立事件
     this._localDeamonWs.onopen = function(event) {
         clearInterval(cloudICP.dispatch.webSocket.reconnectLocalDeamonId);
@@ -15023,7 +16392,8 @@ ICPSDK_Dispatch_WebSocket.prototype.connectToLocalDeamon = function() {
     // 监听sdkserver websocket消息事件
     this._localDeamonWs.onmessage = function(event) {
         if (cloudICP.config.debugMode == "true") {
-            console.log("connectToLocalDeamon: WebSocket message received: " + event.data);
+            curTime = cloudICP.util.getCurrentDate();
+            console.log("[" + curTime + "]get Deamon event:" + event.data);
         }
         cloudICP.dispatch.webSocket.connectToMediaServer();
 
@@ -15099,6 +16469,10 @@ ICPSDK_Dispatch_WebSocket.prototype.connectToMediaServer = function() {
 
     // 监听sdkserver websocket消息事件
     this._medisServerWs.onmessage = function(event) {
+        if (cloudICP.config.debugMode == "true") {
+            curTime = cloudICP.util.getCurrentDate();
+            console.log("[" + curTime + "]get mediaServer event:" + event.data);
+	}
         var ret = this.dealMSPEvent(event);
 
         if (ret == true) {
@@ -15243,7 +16617,13 @@ ICPSDK_Dispatch_WebSocket.prototype.getLocalIpCallBack = function(data) {
     if (0 == data["result"]) {
         cloudICP.config["localIP"] = data["localIP"];
         cloudICP.config["mdcip"] = data["mdcip"];
-        cloudICP.config["mspVersion"] = data["mspVersion"];
+        if (cloudICP.config["mspVersion"] > data["mspVersion"]) {
+            var event = {};
+            event["eventName"] = "OnUpdateMsp";
+            event["moduleType"] = "1";
+            event["desc"] = "msp版本(" + data["mspVersion"] + ")低于jssdk版本(" + cloudICP.config["mspVersion"] + ")，请安装对应版本msp";
+            cloudICP.dispatch.event.EVENT_LIST["MSPNotify"]["OnUpdateMsp"](event);
+        }
         console.log("localIP:" + data["localIP"] + ", mdcip:" + data["mdcip"] + ", mspVersion:" + data["mspVersion"] );
         $('#msp-version').html("[mspVersion:" + cloudICP.config["mspVersion"] + "]");
         if (cloudICP.config["cameraInfo"] && cloudICP.config["localIP"]) {
@@ -15298,10 +16678,10 @@ ICPSDK_Dispatch_WebSocket.prototype.connectToSDKServer = function() {
 
     // 监听sdkserver websocket消息事件
     this._sdkServerWs.onmessage = function (event) {
-        console.log("get sdkServer event:" + event.data);
         if (cloudICP.config.debugMode == "true") {
+            curTime = cloudICP.util.getCurrentDate();
+            console.log("[" + curTime + "]get sdkServer event:" + event.data);
             setTimeout(function() {
-    
                 // var param = "{\"description\":\"msp_client_log_out\", \"cmd\": 131074, \"param\":{\"logLevel\": \"info\", \"logMsg\":\"{0}\"}}".format(msg);
                 cloudICP.util.sendLogOut("connectToSDKServer: WebSocket message received:" + event.data);
             }, 0);
@@ -15434,7 +16814,7 @@ function ICPSDK_Util() {
  * }
  */
 ICPSDK_Util.prototype.log = function(logParam) {
-    var date = new Date().format("yyyy-MM-dd hh:mm:ss");
+    var date = cloudICP.util.getCurrentDate();//new Date().format("yyyy-MM-dd hh:mm:ss");
     if (logParam["logLevel"] == "debug") {
         console.debug("HuaweiICPSDK's Log: " + date + " " + logParam["logMsg"]);
     }
@@ -15583,6 +16963,21 @@ ICPSDK_Util.prototype.isNumber = function(param) {
 }
 
 /**
+ * check the windowinfo param is valid
+ * @param param 
+ */
+ICPSDK_Util.prototype.checkWindowParam = function (param) {
+    if (false == cloudICP.util.isNumber(param)) {
+        return false;
+    }
+    var iValue = parseInt(param);
+    if (0 > iValue || 0x7FFFFFFF < iValue) {
+        return false;
+    }
+    return true;
+}
+
+/**
  * check the struiing param is letter
  * @param param
  */
@@ -15692,6 +17087,60 @@ ICPSDK_Util.prototype.checkCid = function(cid) {
         return true;
     }
     return false;
+}
+
+/**
+ * getUserWindowId
+ * @param NULL
+ */
+ICPSDK_Util.prototype.getUserWindowId = function () {
+    var userWindowId = 2000000001;
+    var bIsContinue = false;
+    for (; userWindowId <= 2000001000; userWindowId++) {
+        if (undefined == cloudICP.util.callStatusMgr.videoMediaInfoBuf[userWindowId.toString()]) {
+            Object.keys(cloudICP.util.callStatusMgr.windowInfos).forEach(function (key) {
+                if (undefined != cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] && cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] == userWindowId) {
+                    bIsContinue = true;
+                    console.log("[getUserWindowId][warning] userWindowId(" + userWindowId + ") is release, but server not return over event.");
+                }
+            });
+            if (false == bIsContinue) {
+                return userWindowId;
+            }
+            bIsContinue = false;
+        }
+    }
+    return userWindowId;
+}
+
+/**
+ * check userWindowId is valid
+ * @param cid
+ */
+ICPSDK_Util.prototype.checkUserWindowId = function (userWindowId, type) {
+    var iResult = 0;
+    if (userWindowId && this.isNumber(userWindowId) && (parseInt(userWindowId, 10) <= 2000001000) && (parseInt(userWindowId, 10) >= 2000000001)) {
+        iResult = 1;
+        var bUserWindowIdIsUsed = false;
+        Object.keys(cloudICP.util.callStatusMgr.videoMediaInfoBuf).forEach(function (key) {
+            if (undefined != cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"]["windowId"] && cloudICP.util.callStatusMgr.videoMediaInfoBuf[key]["value"]["windowId"] == userWindowId) {
+                bUserWindowIdIsUsed = true;
+            }
+        });
+        Object.keys(cloudICP.util.callStatusMgr.windowInfos).forEach(function (key) {
+            if (undefined != cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] && cloudICP.util.callStatusMgr.windowInfos[key]["userWindowId"] == userWindowId) {
+                iResult = 2;
+            }
+        });
+        if ("create" == type && true == bUserWindowIdIsUsed) {
+            iResult = 2;
+        } else if ("use" == type && false == bUserWindowIdIsUsed) {
+            iResult = 2;
+        } else if ("destroy" == type) {
+            return iResult;
+        }
+    }
+    return iResult;
 }
 
 /**
@@ -15825,6 +17274,27 @@ ICPSDK_Util.prototype.checkbuttonIDs = function (buttonIDs) {
     return true;
 }
 
+
+/**
+ * check mode is valid
+ * @param {string} mode
+ */
+ICPSDK_Util.prototype.checkmode = function (mode) {
+    if (undefined == mode || mode == null) {
+        return false;
+    }
+
+    if (typeof mode != "string") {
+        return false;
+    }
+    let modes = new Set(["window", "wssflow", "plugins"])
+    if (!modes.has(mode)) {
+        return false;
+    }
+
+    return true;
+}
+
 /**
  * check the user name
  */
@@ -15858,6 +17328,28 @@ ICPSDK_Util.prototype.checkUserName = function(user) {
 
 
 
+/**
+ * get current date "yyyy-mm-dd HH:MM:SS.mmm"
+ * @param {} 
+ */
+ICPSDK_Util.prototype.getCurrentDate = function () {
+    var date = new Date();
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    month = month < 10 ? "0" + month : month;
+    var day = date.getDate();
+    day = day < 10 ? "0" + day : day;
+    var hour = date.getHours();
+    hour = hour < 10 ? "0" + hour : hour;
+    var minute = date.getMinutes();
+    minute = minute < 10 ? "0" + minute : minute;
+    var second = date.getSeconds();
+    second = second < 10 ? "0" + second : second;
+    var msecond = date.getMilliseconds();
+    msecond = msecond < 10 ? "0" + msecond : msecond;
+    var current = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second + "." + msecond;
+    return current;
+}
 
 Date.prototype.format = function(fmt) {
     var o = {
@@ -16157,11 +17649,18 @@ function CALL_STATUS_MGR() {
 
         var userName = "0" + isdn;
         if (undefined != this.broadcastFile[userName] ) {
-            delete  this.broadcastFile[userName];  
+            delete  this.broadcastFile[userName]; 
+            return ;			
+       }
+	   
+	    var userName1 = "00" + isdn;
+        if (undefined != this.broadcastFile[userName1] ) {
+            delete  this.broadcastFile[userName1];  
+			return ;
        }
     }
 
-    this.getBroadcastFile = function(isdn) {
+    this.getBroadcastFile = function(isdn){
         if (undefined != this.broadcastFile[isdn] ) {
             return  this.broadcastFile[isdn]; 
        }
@@ -16170,6 +17669,11 @@ function CALL_STATUS_MGR() {
        if (undefined != this.broadcastFile[userName] ) {
         return  this.broadcastFile[userName];  
       }
+	  
+	   var userName1 = "00" + isdn;
+        if (undefined != this.broadcastFile[userName1] ) {
+            return  this.broadcastFile[userName1];  
+       }
 
       return null;
     }
@@ -16196,7 +17700,7 @@ function CALL_STATUS_MGR() {
         // 用于规避问题
         // 当通话被转接或抢话的时候，caller和callee的信息会出错，需要icpsdk来矫正。
         if (cloudICP.util.callStatusMgr.connectingCallMgr[0].length != 0 && data["statusvalue"] == "4022") {
-            var cid = cloudICP.util.callStatusMgr.connectingCallMgr[0][cloudICP.util.callStatusMgr.connectingCallMgr[0].length - 1];
+            var cid = cloudICP.util.callStatusMgr.callingCid;//cloudICP.util.callStatusMgr.connectingCallMgr[0][cloudICP.util.callStatusMgr.connectingCallMgr[0].length - 1];
 
             var call = cloudICP.util.callStatusMgr.allCalls[cid];
 
@@ -16247,8 +17751,10 @@ function CALL_STATUS_MGR() {
 
         switch(callState) {
             case _mthis.RINGING:
-                _mthis.callingCid = cid;
-                _mthis.currentCallState = _mthis.RINGING;
+                if (call.callType != _mthis.MONITOR) {
+                    _mthis.callingCid = cid;
+                    _mthis.currentCallState = _mthis.RINGING;
+                }
                 break;
             case this.CONNECTING:
                 // 对视频能力进行维护
@@ -16282,7 +17788,9 @@ function CALL_STATUS_MGR() {
                     }
                 }
                 _mthis.callingCid = cid;
-                _mthis.currentCallState = _mthis.CONNECTING;
+                if (call.callType != _mthis.MONITOR) {
+                    _mthis.currentCallState = _mthis.CONNECTING;
+                }
                 
                 if (!cloudICP.util.includes(_mthis.connectingCallMgr[callType], cid)) {
                     _mthis.connectingCallMgr[callType].push(cid);
@@ -16323,7 +17831,9 @@ function CALL_STATUS_MGR() {
                 }
                 if (_mthis.callingCid == cid) {
                     _mthis.callingCid = -1;
-                    _mthis.currentCallState = _mthis.IDLE;
+                    if (call.callType != _mthis.MONITOR) {
+                    	_mthis.currentCallState = _mthis.IDLE;
+                    }
                 }
                 _mthis.numberOfCall[callType] -=1;
                 var index = _mthis.connectingCallMgr[callType].indexOf(cid);
@@ -16429,12 +17939,10 @@ function CALL_STATUS_MGR() {
                             _mthis.connectingCallMgr[type].splice(index, 1);
                         }
                     }
-
                     return ret;
                 }
             }
         }
-
         return false;
     }
 

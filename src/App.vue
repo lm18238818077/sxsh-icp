@@ -4,23 +4,24 @@
     :before-close="handleCancel">
     <template v-slot:content>{{ dialogContent }}</template>
   </DialogMe>
+
 </template>
 
 <script setup>
-import { h, reactive, ref, computed, watch } from "vue";
+import { h, reactive, ref, computed } from "vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { useIcpStore } from "./store/icp";
 import eventToDesc from "./config/OnDialInRinging";
 import { debounce } from "lodash";
 import { useRouter } from "vue-router";
 import DialogMe from "./components/DialogMe/index.vue";
+import { monitorParam } from "./config";
 
 
 import { sdkStatusNotify, voiceAnswer, videoAnswer, voiceReject, videoReject, dialStatus, voiceRelease, videoRelease } from "./config/status";
 
 const icpStore = useIcpStore();
 const router = useRouter();
-const cids = reactive([])
 
 const onInRinging = reactive({ detail: {} })
 const onCallCidRef = reactive({})
@@ -35,7 +36,6 @@ let cloudICP = new ICPSDK({
   serverHttpPort: "8002",
   debugMode: "true",
   ringFlag: "0",
-  mode: "window",
   ssl_enable: true,
   sdkStatusNotify: (data) => {
     ElNotification({
@@ -45,7 +45,7 @@ let cloudICP = new ICPSDK({
     router.push('/login').then(() => {
       icpStore.success = true
     })
-  },
+  }
 });
 
 icpStore.init(cloudICP);
@@ -69,12 +69,8 @@ const handleOk = (type) => {
       cid: onInRinging.detail.value.cid,
       ...(curCallType.value === "video" && {
         windowInfo: {
-          width: "800",
-          height: "600",
-          posX: "0",
-          posY: "0",
-          buttonIDs: 1,
-          showToolbar: 1
+          mode: "wssflow",
+          ...monitorParam
         },
       }),
       callback: ({ rsp, desc }) => {
@@ -82,34 +78,12 @@ const handleOk = (type) => {
           ElMessage.success("接听成功");
         } else {
           ElMessage.error(`错误码:${rsp},${(curCallType.value == 'voice' ? voiceAnswer[rsp] : videoAnswer[rsp]) || desc}`);
-          console.log({
-            cid: onInRinging.detail.value.cid,
-            ...(curCallType.value === "video" && {
-              windowInfo: {
-                width: "800",
-                height: "600",
-                posX: "0",
-                posY: "0",
-                buttonIDs: 1,
-                showToolbar: 1
-              },
-            }),
-            callback: ({ rsp, desc }) => {
-              if (rsp == 0) {
-                ElMessage.success("接听成功");
-              } else {
-                ElMessage.error(`错误码:${rsp},${(curCallType.value == 'voice' ? voiceAnswer[rsp] : videoAnswer[rsp]) || desc}`);
-              }
-            },
-          })
         }
       },
     });
   }
 
   dialogMeVisible.value = false
-
-
 }
 
 const handleCancel = () => {
@@ -120,124 +94,6 @@ const onCallClose = (value) => {
   onCallCidRef[value.cid].close()
   rejectForm(value)
 }
-
-// 注册语音和视频事件 呼入振铃事件
-cloudICP.dispatch.event.register({
-  eventType: "VoiceNotify",
-  eventName: "OnDialInRinging",
-  callback: (data) => {
-    console.log(data, "VideoNotify  OnDialInRinging");
-    onInRinging.detail = data
-    dialogContent.value = `主叫号码: ${data.value.caller}  被叫号码:${data.value.callee}`
-    dialogTitle.value = eventToDesc[data.eventName]["value"]["calltype"][data.value.calltype]
-    dialogMeVisible.value = true
-
-  },
-});
-
-
-const initMonitor = (id, type) => {
-
-  if (type == 'add') {
-    let lineth = 0
-    lineth = Math.ceil(cids.length / 3)
-    console.log({
-      cid: id,
-      windowInfo: {
-        "width": "300",
-        "height": "300",
-        "posX": ((cids.length - 1) % 3 * 300) + '',
-        "posY": ((lineth - 1) * 300) + ''
-      },
-      callback: ({ rsp, desc }) => {
-        if (rsp != 0) {
-          ElMessage.error(`错误码:${rsp}， ${desc}`);
-        }
-      }
-    }, 'add')
-    cloudICP.dispatch.device.setWindowInfo({
-      cid: id,
-      windowInfo: {
-        "width": "300",
-        "height": "300",
-        "posX": ((cids.length - 1) % 3 * 300) + '',
-        "posY": ((lineth - 1) * 300) + ''
-      },
-      callback: ({ rsp, desc }) => {
-        if (rsp != 0) {
-          ElMessage.error(`错误码:${rsp}， ${desc}`);
-        }
-      }
-    })
-  } else {
-    let lineth = 0
-    for (let i = id; i < cids.length; i++) {
-      console.log({
-        cid: cids[i],
-        windowInfo: {
-          "width": "300",
-          "height": "300",
-          "posX": (i % 3 * 300) + '',
-          "posY": (lineth * 300) + ''
-
-        }
-      }, id, 'jianshao')
-
-      cloudICP.dispatch.device.setWindowInfo({
-        cid: cids[i],
-        windowInfo: {
-          "width": "300",
-          "height": "300",
-          "posX": (i % 3 * 300) + '',
-          "posY": (lineth * 300) + ''
-
-        },
-        callback: ({ rsp, desc }) => {
-          if (rsp != 0) {
-            ElMessage.error(`错误码:${rsp}， ${desc}`);
-          }
-        }
-      })
-
-      if ((i + 1) % 3 === 0) {
-        lineth++
-      }
-
-    }
-  }
-
-
-}
-
-//语音视频注册的事件
-cloudICP.dispatch.event.register({
-  eventType: "VoiceNotify",
-  eventName: "OnDialOutProceeding",
-  callback: ({ eventName, rsp, value }) => {
-    icpStore.callCurrent = value.cid
-    console.log(value, 'cjj2')
-    ElNotification({
-      title: '正在外呼呼出',
-      message: dialStatus[rsp],
-      type: 'success',
-    })
-  },
-});
-
-
-cloudICP.dispatch.event.register({
-  eventType: "VoiceNotify",
-  eventName: "OnDialOutFailure",
-  callback: ({ eventName, rsp, value }) => {
-    console.log(eventName, 22222222)
-    icpStore.callCurrent = ""
-    ElNotification({
-      title: '呼出失败',
-      message: dialStatus[rsp],
-      type: 'error',
-    })
-  },
-});
 
 const onConnectStatus = (eventName, rsp, value) => {
   let eventType = eventToDesc[eventName]['value']['calltype']
@@ -274,7 +130,6 @@ const onConnectStatus = (eventName, rsp, value) => {
   return tip
 }
 
-
 /**
  * description: 挂机事件
  */
@@ -294,16 +149,61 @@ const rejectForm = (value) => {
   });
 };
 
+// 注册语音和视频事件 呼入振铃事件
+cloudICP.dispatch.event.register({
+  eventType: "VoiceNotify",
+  eventName: "OnDialInRinging",
+  callback: (data) => {
+    onInRinging.detail = data
+    dialogContent.value = `主叫号码: ${data.value.caller}  被叫号码:${data.value.callee}`
+    dialogTitle.value = eventToDesc[data.eventName]["value"]["calltype"][data.value.calltype]
+    dialogMeVisible.value = true
+  },
+});
+
+
+//注册外呼呼出事件
+cloudICP.dispatch.event.register({
+  eventType: "VoiceNotify",
+  eventName: "OnDialOutProceeding",
+  callback: ({ eventName, rsp, value }) => {
+    onCallCidRef[value.cid] = ElNotification({
+      title: '正在外呼呼出',
+      message: h('div',{class: 'onconnectcall'},[h('p', `主叫号码: ${value.caller}`),
+      h('p', `被叫号码: ${value.callee}`), 
+      h('p', h('button', { class: 'el-button el-button--primary el-button--small', onClick: () => { onCallClose(value) } }, h('span','挂断')))]),
+      duration: 0,
+      icon: 'phone'
+    })
+  }
+});
+
+
+//注册呼出失败事件
+cloudICP.dispatch.event.register({
+  eventType: "VoiceNotify",
+  eventName: "OnDialOutFailure",
+  callback: ({ eventName, rsp, value }) => {
+    onCallCidRef[value.cid] && onCallCidRef[value.cid].close()
+    ElNotification({
+      title: '呼出失败',
+      message: dialStatus[rsp],
+      type: 'error',
+    })
+  },
+});
+
+//注册表示通话建立。
 cloudICP.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnCallConnect",
   callback: async ({ eventName, rsp, value }) => {
-    icpStore.addCall({...value, rsp})
     await ElNotification({
       title: '通话建立',
       message: dialStatus[rsp],
       type: 'success',
     })
+    onCallCidRef[value.cid] && onCallCidRef[value.cid].close()
 
     onCallCidRef[value.cid] = ElNotification({
       title: onConnectStatus(eventName, rsp, value),
@@ -314,21 +214,19 @@ cloudICP.dispatch.event.register({
       icon: 'phone'
     })
     
-    
     let { cid, calltype } = value
-    if (calltype === 'monitor') {
-      cids.push(cid)
-      initMonitor(cid, 'add')
+    if (calltype === 'monitor' || calltype === 'video' || calltype === 'dispatch') {
+      console.log(value, 'ddddddddd')
+      icpStore.addCall(value)
     }
   },
 });
 
+//通话建立后，通话挂机。
 cloudICP.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnCallRelease",
   callback: ({ eventName, rsp, value }) => {
-    console.log(eventName, 7777777)
-    icpStore.callCurrent = ""
     dialogMeVisible.value = false
     let { cid, calltype } = value
     onCallCidRef[value.cid] && onCallCidRef[value.cid].close()
@@ -337,17 +235,11 @@ cloudICP.dispatch.event.register({
       message: dialStatus[rsp],
       type: 'success',
     })
-    if (calltype === 'monitor') {
-      let index = cids.findIndex(v => v == cid)
-      if (index < 0) return
-      cids.splice(index, 1)
-      initMonitor(index)
+    if (calltype === 'monitor' || calltype === 'video' || calltype === 'dispatch') {
+      icpStore.reduceCall(value.cid)
     }
-  },
+  }
 });
-
-
-
 
 
 //注册组呼状态事件
@@ -355,7 +247,6 @@ cloudICP.dispatch.event.register({
   eventType: "GroupCallNotify",
   eventName: "OnGroupCallStatusNotify",
   callback: debounce(function ({ eventName, rsp, value }) {
-    console.log(eventName, rsp, value, 1111111)
     let current = eventToDesc[eventName]
     ElNotification({
       title: `组呼资源通知（${current.rsp[rsp]}）`,
@@ -405,4 +296,5 @@ cloudICP.dispatch.event.register({
 .onconnectcall > p:last-child{
   margin-top: 6px;
 }
+
 </style>

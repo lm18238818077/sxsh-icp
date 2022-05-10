@@ -5,9 +5,11 @@ export const useIcpStore = defineStore({
   state: ()=>({
     cloudICP: null,
     success: false,
-    callCurrent: '',  //正在呼入的号码
     isdn: null,
-    onCallConnect: []
+    onCallConnect: [
+      // { cid: 34, calltype: 'video' },
+      // { cid: 33, calltype: 'monitor' },
+    ]
   }),
   actions:{
     init(data) {
@@ -16,8 +18,8 @@ export const useIcpStore = defineStore({
     addCall(data){
       this.onCallConnect.push(data)
     },
-    reduceCall(id){
-      let index = this.onCallConnect.findIndex(v=>v.cid == id)
+    reduceCall(val){
+      let index = this.onCallConnect.findIndex(v=>v.cid == val.cid)
       this.onCallConnect.splice(index, 1)
     }
   },
