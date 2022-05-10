@@ -1,14 +1,22 @@
 <template>
   <router-view />
-  <DialogMe @onOk="handleOk" @onCancel="handleCancel" :title="dialogTitle" :visible="dialogMeVisible" width="340px"
-    :before-close="handleCancel">
-    <template v-slot:content>{{ dialogContent }}</template>
-  </DialogMe>
-
+  
+    <DialogMe @onOk="handleOk" @onCancel="handleCancel" :title="dialogTitle" :visible="dialogMeVisible" width="340px"
+      :before-close="handleCancel">
+      <template v-slot:content>{{ dialogContent }}</template>
+    </DialogMe>
+    <div class="app">
+      <el-dialog v-model="dialogPlayerVisible" title="视频" width="1100px" draggable :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false" :modal="false">
+        <div class="playerdialog">
+            <Player v-for="v in onCallConnect" :key="v.cid" :data="v" @stop="rejectForm"/>
+            <i v-for="v in 3"></i>
+        </div>
+      </el-dialog>
+    </div>
 </template>
 
 <script setup>
-import { h, reactive, ref, computed } from "vue";
+import { h, reactive, ref, computed, watchEffect } from "vue";
 import { ElMessage, ElMessageBox, ElNotification } from "element-plus";
 import { useIcpStore } from "./store/icp";
 import eventToDesc from "./config/OnDialInRinging";
@@ -16,6 +24,8 @@ import { debounce } from "lodash";
 import { useRouter } from "vue-router";
 import DialogMe from "./components/DialogMe/index.vue";
 import { monitorParam } from "./config";
+import Player from './components/Player.vue'
+import { storeToRefs } from "pinia";
 
 
 import { sdkStatusNotify, voiceAnswer, videoAnswer, voiceReject, videoReject, dialStatus, voiceRelease, videoRelease } from "./config/status";
@@ -28,7 +38,9 @@ const onCallCidRef = reactive({})
 const dialogTitle = ref('')
 const dialogContent = ref('')
 const dialogMeVisible = ref(false)
+const dialogPlayerVisible = ref(false)
 const curCallType = computed(() => onInRinging.detail.rsp == 2002 ? "voice" : "video")
+const { onCallConnect } = storeToRefs(icpStore);
 
 let cloudICP = new ICPSDK({
   serverWSPort: "8002",
@@ -49,6 +61,11 @@ let cloudICP = new ICPSDK({
 });
 
 icpStore.init(cloudICP);
+
+watchEffect(() => {
+  console.log(onCallConnect.value.length)
+  dialogPlayerVisible.value = !!onCallConnect.value.length
+})
 
 const handleOk = (type) => {
   console.log(curCallType, type, 333)
@@ -286,6 +303,12 @@ cloudICP.dispatch.event.register({
 <style>
 @import "./assets/css/main.css";
 @import "./assets/css/color-dark.css";
+.app > div{
+  visibility: hidden;
+}
+.app .el-dialog{
+  visibility: visible;
+}
 .onconnectcall{
   display: flex;
   flex-direction: column;
@@ -297,4 +320,13 @@ cloudICP.dispatch.event.register({
   margin-top: 6px;
 }
 
+.playerdialog{
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.playerdialog > i{
+  width: 352px;
+}
 </style>

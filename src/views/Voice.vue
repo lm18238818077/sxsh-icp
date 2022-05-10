@@ -45,12 +45,7 @@
             >呼叫</el-button
           >
         </el-form-item>
-        <div id="player"></div>
       </el-form>
-      <div class="playerdialog">
-        <Player v-for="v in onCallConnect" :key="v.cid" :data="v" @stop="rejectVideoForm"/>
-        <i v-for="v in 3"></i>
-    </div>
     </div>
   </div>
 </template>
@@ -61,7 +56,6 @@ import { ElMessage } from "element-plus";
 import { useIcpStore } from "../store/icp";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
-import Player from '../components/Player.vue'
 import {
   voiceDial,
   videoDial,
@@ -72,7 +66,7 @@ import {
 import { monitorParam } from "../config";
 
 const icpStore = useIcpStore();
-const { cloudICP, onCallConnect } = storeToRefs(icpStore);
+const { cloudICP } = storeToRefs(icpStore);
 const formRef = ref(null);
 
 const rspRef = ref(0);
@@ -106,23 +100,6 @@ const rules = reactive({
     },
   ],
 });
-
-const rejectVideoForm = (value) => {
-  let statusType = value.calltype == 'voice' ? voiceRelease : videoRelease
-  cloudICP.value.dispatch[
-    value.calltype == 'voice' ? "voice" : "video"
-  ].release({
-    cid: value.cid,
-    callback: ({ rsp, desc }) => {
-      if (rsp == 0) {
-        // ElMessage.success("挂断成功");
-      } else {
-        ElMessage.error(`错误码:${rsp},${statusType[rsp] || desc}`);
-      }
-    },
-  });
-};
-
 
 
 const submitForm = (formEl) => {
@@ -190,13 +167,5 @@ const submitForm = (formEl) => {
 </script>
 
 <style>
-.playerdialog{
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.playerdialog > i{
-  width: 352px;
-}
+
 </style>
