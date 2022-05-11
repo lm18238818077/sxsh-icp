@@ -20,6 +20,7 @@ export const useIcpStore = defineStore({
     },
     reduceCall(val){
       let index = this.onCallConnect.findIndex(v=>v.cid == val.cid)
+      if(index < 0) return
       this.onCallConnect.splice(index, 1)
     }
   },

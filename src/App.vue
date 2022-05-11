@@ -108,7 +108,7 @@ const handleCancel = () => {
 }
 
 const onCallClose = (value) => {
-  onCallCidRef[value.cid].close()
+  onCallCidRef[value.cid]?.close()
   rejectForm(value)
 }
 
@@ -201,7 +201,7 @@ cloudICP.dispatch.event.register({
   eventType: "VoiceNotify",
   eventName: "OnDialOutFailure",
   callback: ({ eventName, rsp, value }) => {
-    onCallCidRef[value.cid] && onCallCidRef[value.cid].close()
+    onCallCidRef[value.cid]?.close()
     ElNotification({
       title: '呼出失败',
       message: dialStatus[rsp],
@@ -220,7 +220,7 @@ cloudICP.dispatch.event.register({
       message: dialStatus[rsp],
       type: 'success',
     })
-    onCallCidRef[value.cid] && onCallCidRef[value.cid].close()
+    onCallCidRef[value.cid]?.close()
 
     onCallCidRef[value.cid] = ElNotification({
       title: onConnectStatus(eventName, rsp, value),
@@ -233,7 +233,6 @@ cloudICP.dispatch.event.register({
     
     let { cid, calltype } = value
     if (calltype === 'monitor' || calltype === 'video' || calltype === 'dispatch') {
-      console.log(value, 'ddddddddd')
       icpStore.addCall(value)
     }
   },
@@ -246,14 +245,14 @@ cloudICP.dispatch.event.register({
   callback: ({ eventName, rsp, value }) => {
     dialogMeVisible.value = false
     let { cid, calltype } = value
-    onCallCidRef[value.cid] && onCallCidRef[value.cid].close()
+    onCallCidRef[value.cid]?.close()
     ElNotification({
       title: '通话挂机',
       message: dialStatus[rsp],
       type: 'success',
     })
     if (calltype === 'monitor' || calltype === 'video' || calltype === 'dispatch') {
-      icpStore.reduceCall(value.cid)
+      icpStore.reduceCall(value)
     }
   }
 });
@@ -329,4 +328,5 @@ cloudICP.dispatch.event.register({
 .playerdialog > i{
   width: 352px;
 }
+
 </style>

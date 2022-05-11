@@ -141,7 +141,6 @@ const submitForm = (formEl) => {
           to: numberValidateForm.to,
           monitorParam: {
             ...monitorParam,
-            fmt: "4K",
             mute: "1",
             confirm: "1",
             camera: "0",

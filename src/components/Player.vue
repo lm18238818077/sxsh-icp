@@ -108,6 +108,7 @@ export default {
 .wrap .inner {
   background: rgba(0, 0, 0, 0.1);
 }
+
 .wrap > .playicon {
   width: 50px;
   height: 50px;

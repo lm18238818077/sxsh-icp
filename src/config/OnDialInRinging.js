@@ -15,7 +15,7 @@ export default{
         discreetlisten: '缜密侦听',
         monitor: '监控视频',
         halfdial: '半双工点呼',
-        dispatch: '分发',
+        dispatch: '视频上传',
       }
     }
   },
@@ -36,7 +36,7 @@ export default{
         discreetlisten: '缜密侦听',
         monitor: '监控视频',
         halfdial: '半双工点呼',
-        dispatch: '分发',
+        dispatch: '视频上传',
       }
     }
   },
